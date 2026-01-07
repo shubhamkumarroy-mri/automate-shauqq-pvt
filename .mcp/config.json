@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "mcp-servers/github-server/index.ts"
+      ],
+      "description": "Monitors GitHub repository changes and provides Git context"
+    },
+    "test-execution": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "mcp-servers/test-execution-server/index.ts"
+      ],
+      "description": "Executes Playwright/Cucumber tests and reports results"
+    },
+    "specification": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "mcp-servers/specification-server/index.ts"
+      ],
+      "description": "Parses Gherkin specifications and validates BDD coverage"
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "mcp-servers/playwright-server/index.ts"
+      ],
+      "description": "Interactive browser automation for live exploration and test creation"
+    }
+  },
+  "environment": {
+    "NODE_ENV": "development"
+  }
+}
