@@ -1,1 +1,0 @@
-# automate-shauqq-pvt
