@@ -3,8 +3,6 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 /**
  * GitHub MCP Server
@@ -19,26 +17,28 @@ class GitHubMCPServer {
     this.server = new Server(
       {
         name: 'github-mcp-server',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
         capabilities: {
-          tools: {},
-        },
-      },
+          tools: {}
+        }
+      }
     );
 
     this.setupToolHandlers();
 
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
-    process.on('SIGINT', async () => {
-      await this.server.close();
-      process.exit(0);
+    this.server.onerror = error => console.error('[MCP Error]', error);
+    process.on('SIGINT', () => {
+      void (async () => {
+        await this.server.close();
+        process.exit(0);
+      })();
     });
   }
 
   private setupToolHandlers() {
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    this.server.setRequestHandler(ListToolsRequestSchema, () => ({
       tools: [
         {
           name: 'get_changed_files',
@@ -50,10 +50,10 @@ class GitHubMCPServer {
                 type: 'string',
                 enum: ['staged', 'unstaged', 'all'],
                 description: 'Filter by git state',
-                default: 'all',
-              },
-            },
-          },
+                default: 'all'
+              }
+            }
+          }
         },
         {
           name: 'get_file_diff',
@@ -63,24 +63,24 @@ class GitHubMCPServer {
             properties: {
               filePath: {
                 type: 'string',
-                description: 'Relative path to the file',
+                description: 'Relative path to the file'
               },
               staged: {
                 type: 'boolean',
                 description: 'Get staged diff (vs unstaged)',
-                default: false,
-              },
+                default: false
+              }
             },
-            required: ['filePath'],
-          },
+            required: ['filePath']
+          }
         },
         {
           name: 'detect_feature_changes',
           description: 'Detect changes in Gherkin feature files and identify undefined steps',
           inputSchema: {
             type: 'object',
-            properties: {},
-          },
+            properties: {}
+          }
         },
         {
           name: 'get_commit_history',
@@ -91,30 +91,30 @@ class GitHubMCPServer {
               count: {
                 type: 'number',
                 description: 'Number of commits to retrieve',
-                default: 10,
-              },
-            },
-          },
-        },
-      ],
+                default: 10
+              }
+            }
+          }
+        }
+      ]
     }));
 
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, (request) => {
       const { name, arguments: args } = request.params;
 
       try {
         switch (name) {
           case 'get_changed_files':
-            return await this.getChangedFiles(args?.state as string);
+            return this.getChangedFiles(args?.state as string);
 
           case 'get_file_diff':
-            return await this.getFileDiff(args?.filePath as string, args?.staged as boolean);
+            return this.getFileDiff(args?.filePath as string, args?.staged as boolean);
 
           case 'detect_feature_changes':
-            return await this.detectFeatureChanges();
+            return this.detectFeatureChanges();
 
           case 'get_commit_history':
-            return await this.getCommitHistory(args?.count as number);
+            return this.getCommitHistory(args?.count as number);
 
           default:
             throw new Error(`Unknown tool: ${name}`);
@@ -124,51 +124,53 @@ class GitHubMCPServer {
           content: [
             {
               type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ]
         };
       }
     });
   }
 
-  private async getChangedFiles(state: string = 'all') {
+  private getChangedFiles(state = 'all') {
     try {
-      let cmd = 'git status --porcelain';
+      const cmd = 'git status --porcelain';
       const output = execSync(cmd, { cwd: this.repoPath, encoding: 'utf-8' });
 
       const files = output
         .split('\n')
-        .filter((line) => line.trim())
-        .map((line) => {
+        .filter((line: string) => line.trim())
+        .map((line: string) => {
           const status = line.substring(0, 2);
           const filePath = line.substring(3);
-          const staged = status[0] !== ' ' && status[0] !== '?';
+          const staged = !status.startsWith(' ') && !status.startsWith('?');
           const unstaged = status[1] !== ' ';
 
           return { filePath, status, staged, unstaged };
         });
 
-      const filtered = files.filter((f) => {
-        if (state === 'staged') return f.staged;
-        if (state === 'unstaged') return f.unstaged;
-        return true;
-      });
+      const filtered = files.filter(
+        (f: { filePath: string; status: string; staged: boolean; unstaged: boolean }) => {
+          if (state === 'staged') return f.staged;
+          if (state === 'unstaged') return f.unstaged;
+          return true;
+        }
+      );
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ files: filtered, count: filtered.length }, null, 2),
-          },
-        ],
+            text: JSON.stringify({ files: filtered, count: filtered.length }, null, 2)
+          }
+        ]
       };
     } catch (error) {
-      throw new Error(`Failed to get changed files: ${error}`);
+      throw new Error(`Failed to get changed files: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async getFileDiff(filePath: string, staged: boolean = false) {
+  private getFileDiff(filePath: string, staged = false) {
     try {
       const cmd = staged ? `git diff --cached "${filePath}"` : `git diff "${filePath}"`;
 
@@ -178,27 +180,27 @@ class GitHubMCPServer {
         content: [
           {
             type: 'text',
-            text: diff || 'No changes detected',
-          },
-        ],
+            text: diff || 'No changes detected'
+          }
+        ]
       };
     } catch (error) {
-      throw new Error(`Failed to get diff for ${filePath}: ${error}`);
+      throw new Error(`Failed to get diff for ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async detectFeatureChanges() {
+  private detectFeatureChanges() {
     try {
       // Get all changed .feature files
       const statusOutput = execSync('git status --porcelain', {
         cwd: this.repoPath,
-        encoding: 'utf-8',
+        encoding: 'utf-8'
       });
 
       const featureFiles = statusOutput
         .split('\n')
-        .filter((line) => line.includes('.feature'))
-        .map((line) => line.substring(3).trim());
+        .filter((line: string) => line.includes('.feature'))
+        .map((line: string) => line.substring(3).trim());
 
       const changes = [];
 
@@ -206,23 +208,26 @@ class GitHubMCPServer {
         try {
           const diff = execSync(`git diff "${file}"`, {
             cwd: this.repoPath,
-            encoding: 'utf-8',
+            encoding: 'utf-8'
           });
 
           // Extract new Given/When/Then steps
           const newSteps = diff
             .split('\n')
-            .filter((line) => line.startsWith('+') && /^\+\s*(Given|When|Then|And|But)/.test(line))
-            .map((line) => line.substring(1).trim());
+            .filter(
+              (line: string) =>
+                line.startsWith('+') && /^\+\s*(Given|When|Then|And|But)/.test(line)
+            )
+            .map((line: string) => line.substring(1).trim());
 
           if (newSteps.length > 0) {
             changes.push({
               file,
               newSteps,
-              diff: diff.substring(0, 500), // Truncate for readability
+              diff: diff.substring(0, 500) // Truncate for readability
             });
           }
-        } catch (diffError) {
+        } catch {
           // File might be new
           continue;
         }
@@ -236,27 +241,27 @@ class GitHubMCPServer {
               {
                 featureFiles,
                 changes,
-                requiresAttention: changes.length > 0,
+                requiresAttention: changes.length > 0
               },
               null,
-              2,
-            ),
-          },
-        ],
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
-      throw new Error(`Failed to detect feature changes: ${error}`);
+      throw new Error(`Failed to detect feature changes: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async getCommitHistory(count: number = 10) {
+  private getCommitHistory(count = 10) {
     try {
       const log = execSync(`git log -${count} --pretty=format:"%H|%an|%ae|%ad|%s"`, {
         cwd: this.repoPath,
-        encoding: 'utf-8',
+        encoding: 'utf-8'
       });
 
-      const commits = log.split('\n').map((line) => {
+      const commits = log.split('\n').map((line: string) => {
         const [hash, author, email, date, message] = line.split('|');
         return { hash, author, email, date, message };
       });
@@ -265,12 +270,12 @@ class GitHubMCPServer {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ commits, count: commits.length }, null, 2),
-          },
-        ],
+            text: JSON.stringify({ commits, count: commits.length }, null, 2)
+          }
+        ]
       };
     } catch (error) {
-      throw new Error(`Failed to get commit history: ${error}`);
+      throw new Error(`Failed to get commit history: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

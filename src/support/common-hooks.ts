@@ -10,7 +10,7 @@ import {
   WebKitBrowser,
   ConsoleMessage,
   request,
-  Browser,
+  Browser
 } from '@playwright/test';
 import { ensureDir } from 'fs-extra';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -20,7 +20,7 @@ let browser: ChromiumBrowser | FirefoxBrowser | WebKitBrowser | Browser;
 const tracesDir = 'traces';
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var browser: ChromiumBrowser | FirefoxBrowser | WebKitBrowser | Browser;
 }
 
@@ -67,17 +67,17 @@ Before(async function (this: ICustomWorld, { pickle }) {
       command: 'npx',
       args: ['tsx', 'mcp-servers/github-server/index.ts'],
       env: Object.fromEntries(
-        Object.entries(process.env).filter(([, v]) => v !== undefined),
-      ) as Record<string, string>,
+        Object.entries(process.env).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>
     });
     this.mcpClients.github = new Client(
       {
         name: 'cucumber-github-client',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
-        capabilities: {},
-      },
+        capabilities: {}
+      }
     );
     await this.mcpClients.github.connect(githubTransport);
 
@@ -86,17 +86,17 @@ Before(async function (this: ICustomWorld, { pickle }) {
       command: 'npx',
       args: ['tsx', 'mcp-servers/specification-server/index.ts'],
       env: Object.fromEntries(
-        Object.entries(process.env).filter(([, v]) => v !== undefined),
-      ) as Record<string, string>,
+        Object.entries(process.env).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>
     });
     this.mcpClients.specification = new Client(
       {
         name: 'cucumber-spec-client',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
-        capabilities: {},
-      },
+        capabilities: {}
+      }
     );
     await this.mcpClients.specification.connect(specTransport);
 
@@ -105,17 +105,17 @@ Before(async function (this: ICustomWorld, { pickle }) {
       command: 'npx',
       args: ['tsx', 'mcp-servers/test-execution-server/index.ts'],
       env: Object.fromEntries(
-        Object.entries(process.env).filter(([, v]) => v !== undefined),
-      ) as Record<string, string>,
+        Object.entries(process.env).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>
     });
     this.mcpClients.testExecution = new Client(
       {
         name: 'cucumber-test-exec-client',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
-        capabilities: {},
-      },
+        capabilities: {}
+      }
     );
     await this.mcpClients.testExecution.connect(testExecTransport);
 
@@ -124,17 +124,17 @@ Before(async function (this: ICustomWorld, { pickle }) {
       command: 'npx',
       args: ['tsx', 'mcp-servers/playwright-server/index.ts'],
       env: Object.fromEntries(
-        Object.entries(process.env).filter(([, v]) => v !== undefined),
-      ) as Record<string, string>,
+        Object.entries(process.env).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>
     });
     this.mcpClients.playwright = new Client(
       {
         name: 'cucumber-playwright-client',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
-        capabilities: {},
-      },
+        capabilities: {}
+      }
     );
     await this.mcpClients.playwright.connect(playwrightTransport);
 
@@ -149,11 +149,11 @@ Before(async function (this: ICustomWorld, { pickle }) {
   this.context = await browser.newContext({
     acceptDownloads: true,
     recordVideo: process.env.PWVIDEO ? { dir: 'screenshots' } : undefined,
-    viewport: { width: 1200, height: 800 },
+    viewport: { width: 1200, height: 800 }
   });
   this.server = await request.newContext({
     // All requests we send go to this API endpoint.
-    baseURL: config.BASE_API_URL,
+    baseURL: config.BASE_API_URL
   });
 
   await this.context.tracing.start({ screenshots: true, snapshots: true });
@@ -180,7 +180,7 @@ After(async function (this: ICustomWorld, { result }) {
         this.attach(image, 'image/png');
       }
       await this.context?.tracing.stop({
-        path: `${tracesDir}/${this.testName}-${timePart}trace.zip`,
+        path: `${tracesDir}/${this.testName}-${timePart}trace.zip`
       });
     }
   }
@@ -194,9 +194,9 @@ After(async function (this: ICustomWorld, { result }) {
         Promise.race([
           this.mcpClients.github.close(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('GitHub MCP client close timeout')), 3000),
-          ),
-        ]).catch((err) => console.warn('Failed to close GitHub MCP client:', err)),
+            setTimeout(() => reject(new Error('GitHub MCP client close timeout')), 3000)
+          )
+        ]).catch(err => console.warn('Failed to close GitHub MCP client:', err))
       );
     }
 
@@ -205,9 +205,9 @@ After(async function (this: ICustomWorld, { result }) {
         Promise.race([
           this.mcpClients.specification.close(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Specification MCP client close timeout')), 3000),
-          ),
-        ]).catch((err) => console.warn('Failed to close Specification MCP client:', err)),
+            setTimeout(() => reject(new Error('Specification MCP client close timeout')), 3000)
+          )
+        ]).catch(err => console.warn('Failed to close Specification MCP client:', err))
       );
     }
 
@@ -216,9 +216,9 @@ After(async function (this: ICustomWorld, { result }) {
         Promise.race([
           this.mcpClients.testExecution.close(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Test Execution MCP client close timeout')), 3000),
-          ),
-        ]).catch((err) => console.warn('Failed to close Test Execution MCP client:', err)),
+            setTimeout(() => reject(new Error('Test Execution MCP client close timeout')), 3000)
+          )
+        ]).catch(err => console.warn('Failed to close Test Execution MCP client:', err))
       );
     }
 
@@ -227,9 +227,9 @@ After(async function (this: ICustomWorld, { result }) {
         Promise.race([
           this.mcpClients.playwright.close(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Playwright MCP client close timeout')), 10000),
-          ),
-        ]).catch((err) => console.warn('Failed to close Playwright MCP client:', err)),
+            setTimeout(() => reject(new Error('Playwright MCP client close timeout')), 10000)
+          )
+        ]).catch(err => console.warn('Failed to close Playwright MCP client:', err))
       );
     }
 

@@ -7,29 +7,19 @@ import {
   ErrorCode,
   ListToolsRequestSchema,
   McpError,
-  Tool,
+  Tool
 } from '@modelcontextprotocol/sdk/types.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { chromium, Browser, Page, BrowserContext } from 'playwright';
+import { chromium } from 'playwright';
 
 // Global browser instance management
-let browser: Browser | null = null;
-let context: BrowserContext | null = null;
-let page: Page | null = null;
-const sessionTimeout = 30 * 60 * 1000; // 30 minutes
-let lastActivityTime = Date.now();
-
+let browser: any = null;
+let context: any = null;
+let page: any = null;
 // Activity timeout check
 function updateActivity() {
-  lastActivityTime = Date.now();
-}
-
-async function checkSessionTimeout() {
-  if (browser && Date.now() - lastActivityTime > sessionTimeout) {
-    console.error('Browser session timed out after 30 minutes of inactivity');
-    await closeBrowser();
-  }
+  // Placeholder for activity tracking
 }
 
 const isHeadless = process.env.PLAYWRIGHT_HEADLESS !== 'true';
@@ -41,11 +31,11 @@ async function initBrowser() {
       console.error(`Launching browser (headless: ${isHeadless})...`);
       browser = await chromium.launch({
         headless: isHeadless,
-        timeout: 30000, // 30 second timeout
+        timeout: 30000 // 30 second timeout
       });
       console.error('Browser launched successfully');
       context = await browser.newContext({
-        viewport: { width: 1280, height: 720 },
+        viewport: { width: 1280, height: 720 }
       });
       console.error('Browser context created');
       page = await context.newPage();
@@ -66,8 +56,8 @@ async function closeBrowser() {
       await Promise.race([
         browser.close(),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Browser close timeout')), 5000),
-        ),
+          setTimeout(() => reject(new Error('Browser close timeout')), 5000)
+        )
       ]);
       console.error('Browser closed successfully');
     } catch (error) {
@@ -82,7 +72,7 @@ async function closeBrowser() {
 
 // Tool implementations
 async function navigate(
-  url: string,
+  url: string
 ): Promise<{ success: boolean; url: string; title: string; message: string }> {
   try {
     const currentPage = await initBrowser();
@@ -92,58 +82,58 @@ async function navigate(
       success: true,
       url: currentPage.url(),
       title,
-      message: `Successfully navigated to ${url}`,
+      message: `Successfully navigated to ${url}`
     };
   } catch (error) {
     return {
       success: false,
       url,
       title: '',
-      message: `Navigation failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Navigation failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
 
 async function click(
   selector: string,
-  options: { delay?: number; force?: boolean } = {},
+  options: { delay?: number; force?: boolean } = {}
 ): Promise<{ success: boolean; message: string }> {
   try {
     const currentPage = await initBrowser();
     await currentPage.click(selector, { delay: options.delay, force: options.force });
     return {
       success: true,
-      message: `Successfully clicked element: ${selector}`,
+      message: `Successfully clicked element: ${selector}`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Click failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Click failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
 
 async function fill(
   selector: string,
-  text: string,
+  text: string
 ): Promise<{ success: boolean; message: string }> {
   try {
     const currentPage = await initBrowser();
     await currentPage.fill(selector, text);
     return {
       success: true,
-      message: `Successfully filled ${selector} with text`,
+      message: `Successfully filled ${selector} with text`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Fill failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Fill failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
 
 async function screenshot(
-  name?: string,
+  name?: string
 ): Promise<{ success: boolean; path: string; message: string }> {
   try {
     const currentPage = await initBrowser();
@@ -161,49 +151,47 @@ async function screenshot(
     return {
       success: true,
       path: filepath,
-      message: `Screenshot saved to ${filepath}`,
+      message: `Screenshot saved to ${filepath}`
     };
   } catch (error) {
     return {
       success: false,
       path: '',
-      message: `Screenshot failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Screenshot failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
 
-async function queryElements(
-  selector: string,
-): Promise<{
+async function queryElements(selector: string): Promise<{
   success: boolean;
   count: number;
-  elements: Array<{ text: string; visible: boolean }>;
+  elements: { text: string; visible: boolean }[];
 }> {
   try {
     const currentPage = await initBrowser();
     const elements = await currentPage.$$(selector);
     const elementData = await Promise.all(
-      elements.map(async (el) => ({
-        text: await el.textContent().then((t) => t?.trim() || ''),
-        visible: await el.isVisible().catch(() => false),
-      })),
+      elements.map(async (el: any) => ({
+        text: await el.textContent().then((t: any) => t?.trim() || ''),
+        visible: await el.isVisible().catch(() => false)
+      }))
     );
     return {
       success: true,
       count: elements.length,
-      elements: elementData,
+      elements: elementData
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       count: 0,
-      elements: [],
+      elements: []
     };
   }
 }
 
 async function inspect(
-  selector: string,
+  selector: string
 ): Promise<{ success: boolean; html: string; attributes: Record<string, string> }> {
   try {
     const currentPage = await initBrowser();
@@ -212,48 +200,48 @@ async function inspect(
       return {
         success: false,
         html: '',
-        attributes: {},
+        attributes: {}
       };
     }
-    const html = await element.evaluate((el) => el.outerHTML);
+    const html = await element.evaluate((el: any) => el.outerHTML);
     const attributes: Record<string, string> = {};
-    const attrList = await element.evaluate((el) =>
-      Array.from(el.attributes).map((attr) => ({ name: attr.name, value: attr.value })),
+    const attrList = await element.evaluate((el: any) =>
+      Array.from(el.attributes).map((attr: any) => ({ name: attr.name, value: attr.value }))
     );
-    attrList.forEach(({ name, value }) => {
+    attrList.forEach(({ name, value }: any) => {
       attributes[name] = value;
     });
     return {
       success: true,
       html,
-      attributes,
+      attributes
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       html: '',
-      attributes: {},
+      attributes: {}
     };
   }
 }
 
 async function evaluateScript(
-  script: string,
+  script: string
 ): Promise<{ success: boolean; result: unknown; error?: string }> {
   try {
     const currentPage = await initBrowser();
-    const result = await currentPage.evaluate((code) => {
+    const result = await currentPage.evaluate((code: any) => {
       return eval(code);
     }, script);
     return {
       success: true,
-      result,
+      result
     };
   } catch (error) {
     return {
       success: false,
       result: null,
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error.message : String(error)
     };
   }
 }
@@ -271,21 +259,21 @@ async function getPageState(): Promise<{
       success: true,
       url: currentPage.url(),
       title: await currentPage.title(),
-      content,
+      content
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       url: '',
       title: '',
-      content: '',
+      content: ''
     };
   }
 }
 
 async function waitForSelector(
   selector: string,
-  timeoutMs = 15000,
+  timeoutMs = 15000
 ): Promise<{ success: boolean; message: string }> {
   try {
     const currentPage = await initBrowser();
@@ -294,7 +282,7 @@ async function waitForSelector(
   } catch (error) {
     return {
       success: false,
-      message: `waitForSelector failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `waitForSelector failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
@@ -304,12 +292,12 @@ async function closeBrowserSession(): Promise<{ success: boolean; message: strin
     await closeBrowser();
     return {
       success: true,
-      message: 'Browser session closed successfully',
+      message: 'Browser session closed successfully'
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to close browser: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Failed to close browser: ${error instanceof Error ? error.message : String(error)}`
     };
   }
 }
@@ -323,11 +311,11 @@ const tools: Tool[] = [
       properties: {
         url: {
           type: 'string',
-          description: 'The URL to navigate to (e.g., https://example.com)',
-        },
+          description: 'The URL to navigate to (e.g., https://example.com)'
+        }
       },
-      required: ['url'],
-    },
+      required: ['url']
+    }
   },
   {
     name: 'click',
@@ -337,19 +325,19 @@ const tools: Tool[] = [
       properties: {
         selector: {
           type: 'string',
-          description: 'CSS selector for the element to click',
+          description: 'CSS selector for the element to click'
         },
         delay: {
           type: 'number',
-          description: 'Delay between mouse down and mouse up in milliseconds',
+          description: 'Delay between mouse down and mouse up in milliseconds'
         },
         force: {
           type: 'boolean',
-          description: 'Whether to bypass visibility checks',
-        },
+          description: 'Whether to bypass visibility checks'
+        }
       },
-      required: ['selector'],
-    },
+      required: ['selector']
+    }
   },
   {
     name: 'fill',
@@ -359,15 +347,15 @@ const tools: Tool[] = [
       properties: {
         selector: {
           type: 'string',
-          description: 'CSS selector for the input element',
+          description: 'CSS selector for the input element'
         },
         text: {
           type: 'string',
-          description: 'Text to fill in the input',
-        },
+          description: 'Text to fill in the input'
+        }
       },
-      required: ['selector', 'text'],
-    },
+      required: ['selector', 'text']
+    }
   },
   {
     name: 'screenshot',
@@ -377,10 +365,10 @@ const tools: Tool[] = [
       properties: {
         name: {
           type: 'string',
-          description: 'Optional name for the screenshot file',
-        },
-      },
-    },
+          description: 'Optional name for the screenshot file'
+        }
+      }
+    }
   },
   {
     name: 'queryElements',
@@ -391,11 +379,11 @@ const tools: Tool[] = [
       properties: {
         selector: {
           type: 'string',
-          description: 'CSS selector to query elements',
-        },
+          description: 'CSS selector to query elements'
+        }
       },
-      required: ['selector'],
-    },
+      required: ['selector']
+    }
   },
   {
     name: 'inspect',
@@ -405,11 +393,11 @@ const tools: Tool[] = [
       properties: {
         selector: {
           type: 'string',
-          description: 'CSS selector for the element to inspect',
-        },
+          description: 'CSS selector for the element to inspect'
+        }
       },
-      required: ['selector'],
-    },
+      required: ['selector']
+    }
   },
   {
     name: 'evaluateScript',
@@ -419,19 +407,19 @@ const tools: Tool[] = [
       properties: {
         script: {
           type: 'string',
-          description: 'JavaScript code to execute (can reference page state)',
-        },
+          description: 'JavaScript code to execute (can reference page state)'
+        }
       },
-      required: ['script'],
-    },
+      required: ['script']
+    }
   },
   {
     name: 'getPageState',
     description: 'Get the current page URL, title, and full HTML content',
     inputSchema: {
       type: 'object' as const,
-      properties: {},
-    },
+      properties: {}
+    }
   },
   {
     name: 'waitForSelector',
@@ -441,24 +429,24 @@ const tools: Tool[] = [
       properties: {
         selector: {
           type: 'string',
-          description: 'CSS/text selector to wait for',
+          description: 'CSS/text selector to wait for'
         },
         timeoutMs: {
           type: 'number',
-          description: 'Timeout in milliseconds (default 15000)',
-        },
+          description: 'Timeout in milliseconds (default 15000)'
+        }
       },
-      required: ['selector'],
-    },
+      required: ['selector']
+    }
   },
   {
     name: 'closeBrowserSession',
     description: 'Close the browser session and clean up resources',
     inputSchema: {
       type: 'object' as const,
-      properties: {},
-    },
-  },
+      properties: {}
+    }
+  }
 ];
 
 class PlaywrightMCPServer {
@@ -468,13 +456,13 @@ class PlaywrightMCPServer {
     this.server = new Server(
       {
         name: 'playwright-server',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
         capabilities: {
-          tools: {},
-        },
-      },
+          tools: {}
+        }
+      }
     );
 
     this.setupHandlers();
@@ -482,7 +470,7 @@ class PlaywrightMCPServer {
 
   private setupHandlers(): void {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools,
+      tools
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -502,7 +490,7 @@ class PlaywrightMCPServer {
           case 'click':
             result = await click(args.selector as string, {
               delay: args.delay as number | undefined,
-              force: args.force as boolean | undefined,
+              force: args.force as boolean | undefined
             });
             break;
           case 'fill':
@@ -526,7 +514,7 @@ class PlaywrightMCPServer {
           case 'waitForSelector':
             result = await waitForSelector(
               args.selector as string,
-              args.timeoutMs as number | undefined,
+              args.timeoutMs as number | undefined
             );
             break;
           case 'closeBrowserSession':
@@ -540,19 +528,19 @@ class PlaywrightMCPServer {
           content: [
             {
               type: 'text' as const,
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
         };
       } catch (error) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`
+            }
           ],
-          isError: true,
+          isError: true
         };
       }
     });

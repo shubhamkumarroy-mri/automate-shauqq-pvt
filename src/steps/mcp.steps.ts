@@ -7,7 +7,7 @@ import {
   analyzeCoverage,
   validateSteps,
   parseFeature,
-  getFileDiff,
+  getFileDiff
 } from '../utils/mcp-helpers';
 
 /**
@@ -75,12 +75,12 @@ Then(
     const result = await parseFeature(this, filePath);
 
     this.attach(
-      `Feature: ${result.feature.name}\nScenarios: ${result.totalScenarios}\nSteps: ${result.totalSteps}`,
+      `Feature: ${result.feature.name}\nScenarios: ${result.totalScenarios}\nSteps: ${result.totalSteps}`
     );
 
     expect(result.feature.name).toBeDefined();
     expect(result.totalScenarios).toBeGreaterThan(0);
-  },
+  }
 );
 
 When('I analyze step definition coverage', async function (this: ICustomWorld) {
@@ -104,7 +104,7 @@ Then(
     this.attach(`Current coverage: ${coverage.coveragePercentage}%`);
 
     expect(coverage.coveragePercentage).toBeGreaterThanOrEqual(minCoverage);
-  },
+  }
 );
 
 Then('all steps should be defined', async function (this: ICustomWorld) {
@@ -129,7 +129,7 @@ When('I validate all step definitions', async function (this: ICustomWorld) {
   const result = await validateSteps(this);
 
   this.attach(
-    `Step validation: ${result.allStepsDefined ? 'PASS' : 'FAIL'}\nUndefined: ${result.count}`,
+    `Step validation: ${result.allStepsDefined ? 'PASS' : 'FAIL'}\nUndefined: ${result.count}`
   );
 
   expect(result.timedOut).toBe(false);
@@ -159,7 +159,7 @@ Then(
     this.attach(`Undefined steps in ${featurePath}: ${result.count}`);
 
     expect(result.undefinedSteps).toBeDefined();
-  },
+  }
 );
 
 // Advanced MCP Usage Examples
@@ -175,7 +175,7 @@ Given(
 
     if (featureChanges.length > 0) {
       this.attach(
-        `Changed feature files: ${featureChanges.map((f: any) => f.filePath).join(', ')}`,
+        `Changed feature files: ${featureChanges.map((f: any) => f.filePath).join(', ')}`
       );
 
       // Validate steps for each changed feature
@@ -189,7 +189,7 @@ Given(
     } else {
       this.attach('No feature files were changed');
     }
-  },
+  }
 );
 
 Then(
@@ -208,10 +208,10 @@ Undefined Steps: ${validation.count}`);
       expect(validation.allStepsDefined).toBe(true);
     } else if (validation.count > 0) {
       this.attach(
-        `⚠️ ${validation.count} step(s) may be undefined - could be false positives from pattern matching`,
+        `⚠️ ${validation.count} step(s) may be undefined - could be false positives from pattern matching`
       );
     }
-  },
+  }
 );
 
 // Pattern: Using MCP tools with Playwright actions
@@ -230,5 +230,5 @@ When(
     }
 
     this.attach(`✓ All steps defined for ${featurePath}`);
-  },
+  }
 );

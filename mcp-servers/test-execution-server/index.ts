@@ -19,18 +19,18 @@ class TestExecutionMCPServer {
     this.server = new Server(
       {
         name: 'test-execution-mcp-server',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
         capabilities: {
-          tools: {},
-        },
-      },
+          tools: {}
+        }
+      }
     );
 
     this.setupToolHandlers();
 
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
+    this.server.onerror = error => console.error('[MCP Error]', error);
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
@@ -48,27 +48,27 @@ class TestExecutionMCPServer {
             properties: {
               feature: {
                 type: 'string',
-                description: 'Specific feature file to run (optional)',
+                description: 'Specific feature file to run (optional)'
               },
               tags: {
                 type: 'string',
-                description: 'Cucumber tags to filter tests (e.g., @smoke)',
+                description: 'Cucumber tags to filter tests (e.g., @smoke)'
               },
               dryRun: {
                 type: 'boolean',
                 description: 'Run in dry-run mode to check for undefined steps',
-                default: false,
-              },
-            },
-          },
+                default: false
+              }
+            }
+          }
         },
         {
           name: 'get_test_results',
           description: 'Get results from the last test run',
           inputSchema: {
             type: 'object',
-            properties: {},
-          },
+            properties: {}
+          }
         },
         {
           name: 'validate_steps',
@@ -78,20 +78,20 @@ class TestExecutionMCPServer {
             properties: {
               feature: {
                 type: 'string',
-                description: 'Specific feature file to validate',
-              },
-            },
-          },
+                description: 'Specific feature file to validate'
+              }
+            }
+          }
         },
         {
           name: 'generate_step_snippets',
           description: 'Generate boilerplate code for undefined steps',
           inputSchema: {
             type: 'object',
-            properties: {},
-          },
-        },
-      ],
+            properties: {}
+          }
+        }
+      ]
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -103,7 +103,7 @@ class TestExecutionMCPServer {
             return await this.runTests(
               args?.feature as string,
               args?.tags as string,
-              args?.dryRun as boolean,
+              args?.dryRun as boolean
             );
 
           case 'get_test_results':
@@ -123,9 +123,9 @@ class TestExecutionMCPServer {
           content: [
             {
               type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ]
         };
       }
     });
@@ -134,8 +134,8 @@ class TestExecutionMCPServer {
   private async runTests(
     feature?: string,
     tags?: string,
-    dryRun: boolean = false,
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    dryRun = false
+  ): Promise<{ content: { type: string; text: string }[] }> {
     return new Promise((resolve) => {
       const args = ['run', 'cucumber'];
 
@@ -149,7 +149,7 @@ class TestExecutionMCPServer {
 
       const proc = spawn('npm', args, {
         cwd: this.projectPath,
-        shell: false, // Fixed: Use false to avoid security warning
+        shell: false // Fixed: Use false to avoid security warning
       });
 
       // Set 5-minute timeout to prevent hanging processes
@@ -158,7 +158,7 @@ class TestExecutionMCPServer {
           timedOut = true;
           proc.kill('SIGTERM');
         },
-        5 * 60 * 1000,
+        5 * 60 * 1000
       );
 
       proc.stdout.on('data', (data) => {
@@ -174,8 +174,8 @@ class TestExecutionMCPServer {
 
         // Truncate output if it exceeds 100KB to prevent memory issues
         const maxSize = 100 * 1024;
-        const truncatedOutput =
-          output.length > maxSize
+        const truncatedOutput
+          = output.length > maxSize
             ? `[Output truncated - original size: ${output.length} bytes]\n...\n${output.substring(output.length - maxSize)}`
             : output;
 
@@ -186,22 +186,22 @@ class TestExecutionMCPServer {
           success: code === 0,
           timedOut,
           dryRun,
-          outputSize: output.length,
+          outputSize: output.length
         };
 
         resolve({
           content: [
             {
               type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
+              text: JSON.stringify(result, null, 2)
+            }
+          ]
         });
       });
     });
   }
 
-  private async getTestResults(): Promise<{ content: Array<{ type: string; text: string }> }> {
+  private async getTestResults(): Promise<{ content: { type: string; text: string }[] }> {
     try {
       const reportPath = join(this.projectPath, 'reports', 'cucumber-report.json');
 
@@ -210,9 +210,9 @@ class TestExecutionMCPServer {
           content: [
             {
               type: 'text',
-              text: JSON.stringify({ error: 'No test results found. Run tests first.' }),
-            },
-          ],
+              text: JSON.stringify({ error: 'No test results found. Run tests first.' })
+            }
+          ]
         };
       }
 
@@ -225,15 +225,15 @@ class TestExecutionMCPServer {
           passed: 0,
           failed: 0,
           undefined: 0,
-          skipped: 0,
+          skipped: 0
         },
         steps: {
           total: 0,
           passed: 0,
           failed: 0,
           undefined: 0,
-          skipped: 0,
-        },
+          skipped: 0
+        }
       };
 
       report.forEach((feature: any) => {
@@ -264,9 +264,9 @@ class TestExecutionMCPServer {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({ summary, timestamp: new Date().toISOString() }, null, 2),
-          },
-        ],
+            text: JSON.stringify({ summary, timestamp: new Date().toISOString() }, null, 2)
+          }
+        ]
       };
     } catch (error) {
       throw new Error(`Failed to get test results: ${error}`);
@@ -274,8 +274,8 @@ class TestExecutionMCPServer {
   }
 
   private async validateSteps(
-    feature?: string,
-  ): Promise<{ content: Array<{ type: string; text: string }> }> {
+    feature?: string
+  ): Promise<{ content: { type: string; text: string }[] }> {
     return new Promise((resolve) => {
       const args = ['run', 'steps-usage'];
       if (feature) args.push(feature);
@@ -285,7 +285,7 @@ class TestExecutionMCPServer {
 
       const proc = spawn('npm', args, {
         cwd: this.projectPath,
-        shell: false, // Fixed: Use false to avoid security warning
+        shell: false // Fixed: Use false to avoid security warning
       });
 
       // Set 2-minute timeout for step validation
@@ -294,7 +294,7 @@ class TestExecutionMCPServer {
           timedOut = true;
           proc.kill('SIGTERM');
         },
-        2 * 60 * 1000,
+        2 * 60 * 1000
       );
 
       proc.stdout.on('data', (data) => {
@@ -306,8 +306,8 @@ class TestExecutionMCPServer {
 
         const undefinedSteps = output
           .split('\n')
-          .filter((line) => line.includes('undefined'))
-          .map((line) => line.trim());
+          .filter(line => line.includes('undefined'))
+          .map(line => line.trim());
 
         resolve({
           content: [
@@ -318,20 +318,20 @@ class TestExecutionMCPServer {
                   undefinedSteps,
                   count: undefinedSteps.length,
                   allStepsDefined: undefinedSteps.length === 0,
-                  timedOut,
+                  timedOut
                 },
                 null,
-                2,
-              ),
-            },
-          ],
+                2
+              )
+            }
+          ]
         });
       });
     });
   }
 
   private async generateStepSnippets(): Promise<{
-    content: Array<{ type: string; text: string }>;
+    content: { type: string; text: string }[];
   }> {
     return new Promise((resolve) => {
       let output = '';
@@ -339,7 +339,7 @@ class TestExecutionMCPServer {
 
       const proc = spawn('npm', ['run', 'snippets'], {
         cwd: this.projectPath,
-        shell: false, // Fixed: Use false to avoid security warning
+        shell: false // Fixed: Use false to avoid security warning
       });
 
       // Set 2-minute timeout for snippet generation
@@ -348,7 +348,7 @@ class TestExecutionMCPServer {
           timedOut = true;
           proc.kill('SIGTERM');
         },
-        2 * 60 * 1000,
+        2 * 60 * 1000
       );
 
       proc.stdout.on('data', (data) => {
@@ -365,13 +365,13 @@ class TestExecutionMCPServer {
               text: JSON.stringify(
                 {
                   snippets: output || 'No undefined steps found',
-                  timedOut,
+                  timedOut
                 },
                 null,
-                2,
-              ),
-            },
-          ],
+                2
+              )
+            }
+          ]
         });
       });
     });

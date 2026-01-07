@@ -34,7 +34,7 @@ interface ScreenshotResult {
 interface QueryResult {
   success: boolean;
   count: number;
-  elements: Array<{ text: string; visible: boolean }>;
+  elements: { text: string; visible: boolean }[];
 }
 
 interface InspectResult {
@@ -79,9 +79,9 @@ export async function navigateTo(world: ICustomWorld, url: string): Promise<Navi
 
   const result = await world.mcpClients.playwright.callTool({
     name: 'navigate',
-    arguments: { url },
+    arguments: { url }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -95,7 +95,7 @@ export async function navigateTo(world: ICustomWorld, url: string): Promise<Navi
 export async function clickElement(
   world: ICustomWorld,
   selector: string,
-  options: { delay?: number; force?: boolean } = {},
+  options: { delay?: number; force?: boolean } = {}
 ): Promise<ClickResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -106,10 +106,10 @@ export async function clickElement(
     arguments: {
       selector,
       delay: options.delay,
-      force: options.force,
-    },
+      force: options.force
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -123,7 +123,7 @@ export async function clickElement(
 export async function fillInput(
   world: ICustomWorld,
   selector: string,
-  text: string,
+  text: string
 ): Promise<FillResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -133,10 +133,10 @@ export async function fillInput(
     name: 'fill',
     arguments: {
       selector,
-      text,
-    },
+      text
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -148,7 +148,7 @@ export async function fillInput(
  */
 export async function takeScreenshot(
   world: ICustomWorld,
-  name?: string,
+  name?: string
 ): Promise<ScreenshotResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -157,10 +157,10 @@ export async function takeScreenshot(
   const result = await world.mcpClients.playwright.callTool({
     name: 'screenshot',
     arguments: {
-      name: name || `screenshot`,
-    },
+      name: name || `screenshot`
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -178,10 +178,10 @@ export async function queryElements(world: ICustomWorld, selector: string): Prom
   const result = await world.mcpClients.playwright.callTool({
     name: 'queryElements',
     arguments: {
-      selector,
-    },
+      selector
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -193,7 +193,7 @@ export async function queryElements(world: ICustomWorld, selector: string): Prom
  */
 export async function inspectElement(
   world: ICustomWorld,
-  selector: string,
+  selector: string
 ): Promise<InspectResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -202,10 +202,10 @@ export async function inspectElement(
   const result = await world.mcpClients.playwright.callTool({
     name: 'inspect',
     arguments: {
-      selector,
-    },
+      selector
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -223,10 +223,10 @@ export async function evaluateScript(world: ICustomWorld, script: string): Promi
   const result = await world.mcpClients.playwright.callTool({
     name: 'evaluateScript',
     arguments: {
-      script,
-    },
+      script
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -242,9 +242,9 @@ export async function getPageState(world: ICustomWorld): Promise<PageStateResult
 
   const result = await world.mcpClients.playwright.callTool({
     name: 'getPageState',
-    arguments: {},
+    arguments: {}
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -260,9 +260,9 @@ export async function closeBrowserSession(world: ICustomWorld): Promise<CloseBro
 
   const result = await world.mcpClients.playwright.callTool({
     name: 'closeBrowserSession',
-    arguments: {},
+    arguments: {}
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -275,7 +275,7 @@ export async function closeBrowserSession(world: ICustomWorld): Promise<CloseBro
 export async function waitForSelector(
   world: ICustomWorld,
   selector: string,
-  timeoutMs?: number,
+  timeoutMs?: number
 ): Promise<WaitForSelectorResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -285,10 +285,10 @@ export async function waitForSelector(
     name: 'waitForSelector',
     arguments: {
       selector,
-      timeoutMs,
-    },
+      timeoutMs
+    }
   });
-  const content = result.content as Array<{ type: string; text: string }>;
+  const content = result.content as { type: string; text: string }[];
   return JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 }
 
@@ -304,7 +304,7 @@ export async function navigateAndWaitForElement(
   world: ICustomWorld,
   url: string,
   selector: string,
-  timeout: number = 5000,
+  timeout = 5000
 ): Promise<NavigateResult> {
   const navResult = await navigateTo(world, url);
 
@@ -313,10 +313,10 @@ export async function navigateAndWaitForElement(
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
       const queryResult = await queryElements(world, selector);
-      if (queryResult.count > 0 && queryResult.elements.some((el) => el.visible)) {
+      if (queryResult.count > 0 && queryResult.elements.some(el => el.visible)) {
         break;
       }
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
 
@@ -331,7 +331,7 @@ export async function navigateAndWaitForElement(
  */
 export async function fillForm(
   world: ICustomWorld,
-  formFields: Record<string, string>,
+  formFields: Record<string, string>
 ): Promise<FillResult[]> {
   const results: FillResult[] = [];
   for (const [selector, text] of Object.entries(formFields)) {
@@ -352,7 +352,7 @@ export async function fillForm(
  */
 export async function getVisibleText(world: ICustomWorld, selector: string): Promise<string[]> {
   const queryResult = await queryElements(world, selector);
-  return queryResult.elements.filter((el) => el.visible).map((el) => el.text);
+  return queryResult.elements.filter(el => el.visible).map(el => el.text);
 }
 
 /**
@@ -363,7 +363,7 @@ export async function getVisibleText(world: ICustomWorld, selector: string): Pro
  */
 export async function isElementVisible(world: ICustomWorld, selector: string): Promise<boolean> {
   const queryResult = await queryElements(world, selector);
-  return queryResult.count > 0 && queryResult.elements.some((el) => el.visible);
+  return queryResult.count > 0 && queryResult.elements.some(el => el.visible);
 }
 
 /**
@@ -376,7 +376,7 @@ export async function isElementVisible(world: ICustomWorld, selector: string): P
 export async function clickByRole(
   world: ICustomWorld,
   role: string,
-  options?: Record<string, any>,
+  options?: Record<string, any>
 ): Promise<ClickResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -394,18 +394,18 @@ export async function clickByRole(
     const baseArguments: Record<string, any> = { selector };
     const primary = await world.mcpClients.playwright.callTool({
       name: 'click',
-      arguments: baseArguments,
+      arguments: baseArguments
     });
 
-    const primaryContent = primary.content as Array<{ type: string; text: string }>;
+    const primaryContent = primary.content as { type: string; text: string }[];
     const parsedPrimary = JSON.parse(
-      primaryContent[0].type === 'text' ? primaryContent[0].text : primaryContent[0].text,
+      primaryContent[0].type === 'text' ? primaryContent[0].text : primaryContent[0].text
     );
 
     if (parsedPrimary.success) {
       return {
         success: true,
-        message: parsedPrimary.message || `Clicked ${role}`,
+        message: parsedPrimary.message || `Clicked ${role}`
       };
     }
 
@@ -413,28 +413,28 @@ export async function clickByRole(
     if (options?.force === false) {
       return {
         success: false,
-        message: parsedPrimary.message || `Failed to click ${role}`,
+        message: parsedPrimary.message || `Failed to click ${role}`
       };
     }
 
     const forced = await world.mcpClients.playwright.callTool({
       name: 'click',
-      arguments: { ...baseArguments, force: true },
+      arguments: { ...baseArguments, force: true }
     });
 
-    const forcedContent = forced.content as Array<{ type: string; text: string }>;
+    const forcedContent = forced.content as { type: string; text: string }[];
     const parsedForced = JSON.parse(
-      forcedContent[0].type === 'text' ? forcedContent[0].text : forcedContent[0].text,
+      forcedContent[0].type === 'text' ? forcedContent[0].text : forcedContent[0].text
     );
 
     return {
       success: parsedForced.success,
-      message: parsedForced.message || `Clicked ${role} (forced)`,
+      message: parsedForced.message || `Clicked ${role} (forced)`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to click ${role}: ${(error as Error).message}`,
+      message: `Failed to click ${role}: ${(error as Error).message}`
     };
   }
 }
@@ -451,7 +451,7 @@ export async function fillByRole(
   world: ICustomWorld,
   role: string,
   text: string,
-  options?: Record<string, any>,
+  options?: Record<string, any>
 ): Promise<FillResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -466,19 +466,19 @@ export async function fillByRole(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'fill',
-      arguments: { selector, text },
+      arguments: { selector, text }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Filled ${role}`,
+      message: parsed.message || `Filled ${role}`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to fill ${role}: ${(error as Error).message}`,
+      message: `Failed to fill ${role}: ${(error as Error).message}`
     };
   }
 }
@@ -493,7 +493,7 @@ export async function fillByRole(
 export async function fillFirstRole(
   world: ICustomWorld,
   role: string,
-  text: string,
+  text: string
 ): Promise<FillResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -504,19 +504,19 @@ export async function fillFirstRole(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'fill',
-      arguments: { selector, text },
+      arguments: { selector, text }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Filled first ${role}`,
+      message: parsed.message || `Filled first ${role}`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to fill first ${role}: ${(error as Error).message}`,
+      message: `Failed to fill first ${role}: ${(error as Error).message}`
     };
   }
 }
@@ -537,19 +537,19 @@ export async function clickByTitle(world: ICustomWorld, title: string): Promise<
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'click',
-      arguments: { selector },
+      arguments: { selector }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Clicked element with title`,
+      message: parsed.message || `Clicked element with title`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to click element by title: ${(error as Error).message}`,
+      message: `Failed to click element by title: ${(error as Error).message}`
     };
   }
 }
@@ -562,7 +562,7 @@ export async function clickByTitle(world: ICustomWorld, title: string): Promise<
  */
 export async function clickDialogButton(
   world: ICustomWorld,
-  buttonText: string,
+  buttonText: string
 ): Promise<ClickResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -573,19 +573,19 @@ export async function clickDialogButton(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'click',
-      arguments: { selector },
+      arguments: { selector }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Clicked dialog button`,
+      message: parsed.message || `Clicked dialog button`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to click dialog button: ${(error as Error).message}`,
+      message: `Failed to click dialog button: ${(error as Error).message}`
     };
   }
 }
@@ -606,19 +606,19 @@ export async function clickByText(world: ICustomWorld, text: string): Promise<Cl
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'click',
-      arguments: { selector },
+      arguments: { selector }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Clicked element with text`,
+      message: parsed.message || `Clicked element with text`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to click element by text: ${(error as Error).message}`,
+      message: `Failed to click element by text: ${(error as Error).message}`
     };
   }
 }
@@ -633,7 +633,7 @@ export async function clickByText(world: ICustomWorld, text: string): Promise<Cl
 export async function waitForText(
   world: ICustomWorld,
   text: string,
-  timeoutMs: number = 15000,
+  timeoutMs = 15000
 ): Promise<{ success: boolean; message: string }> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -644,19 +644,19 @@ export async function waitForText(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'waitForSelector',
-      arguments: { selector, timeoutMs },
+      arguments: { selector, timeoutMs }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.success,
-      message: parsed.message || `Text appeared`,
+      message: parsed.message || `Text appeared`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to wait for text: ${(error as Error).message}`,
+      message: `Failed to wait for text: ${(error as Error).message}`
     };
   }
 }
@@ -669,7 +669,7 @@ export async function waitForText(
  */
 export async function isTextVisible(
   world: ICustomWorld,
-  text: string,
+  text: string
 ): Promise<{ success: boolean; message: string }> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -680,21 +680,21 @@ export async function isTextVisible(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'queryElements',
-      arguments: { selector },
+      arguments: { selector }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
-    const isVisible = parsed.elements && parsed.elements.some((el: any) => el.visible);
+    const isVisible = parsed.elements?.some((el: any) => el.visible);
 
     return {
       success: isVisible,
-      message: isVisible ? `Text is visible` : `Text is not visible`,
+      message: isVisible ? `Text is visible` : `Text is not visible`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to check text visibility: ${(error as Error).message}`,
+      message: `Failed to check text visibility: ${(error as Error).message}`
     };
   }
 }
@@ -709,7 +709,7 @@ export async function isTextVisible(
 export async function waitForElement(
   world: ICustomWorld,
   selector: string,
-  timeoutMs: number = 15000,
+  timeoutMs = 15000
 ): Promise<{ success: boolean; message: string }> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -718,20 +718,20 @@ export async function waitForElement(
   try {
     const result = await world.mcpClients.playwright.callTool({
       name: 'waitForSelector',
-      arguments: { selector, timeoutMs },
+      arguments: { selector, timeoutMs }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
 
     return {
       success: parsed.success,
-      message: parsed.message || `Element appeared`,
+      message: parsed.message || `Element appeared`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to wait for element: ${(error as Error).message}`,
+      message: `Failed to wait for element: ${(error as Error).message}`
     };
   }
 }
@@ -748,7 +748,7 @@ export async function forceClickByText(
   world: ICustomWorld,
   tag: string,
   text: string,
-  partialMatch: boolean = false,
+  partialMatch = false
 ): Promise<ClickResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -792,19 +792,19 @@ export async function forceClickByText(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'evaluateScript',
-      arguments: { script },
+      arguments: { script }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.result === true,
-      message: `Force clicked ${tag} with text "${text}"`,
+      message: `Force clicked ${tag} with text "${text}"`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to force click: ${(error as Error).message}`,
+      message: `Failed to force click: ${(error as Error).message}`
     };
   }
 }
@@ -819,14 +819,14 @@ export async function forceClickByText(
 export async function forceSetValue(
   world: ICustomWorld,
   selector: string,
-  value: string,
+  value: string
 ): Promise<FillResult> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
   }
 
   try {
-    const escapedValue = value.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    const escapedValue = value.replace(/'/g, '\\\'').replace(/"/g, '\\"');
     const script = `(function() {
       const el = document.querySelector('${selector}');
       if (el) {
@@ -839,19 +839,19 @@ export async function forceSetValue(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'evaluateScript',
-      arguments: { script },
+      arguments: { script }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: parsed.result === true,
-      message: `Force filled ${selector} with value`,
+      message: `Force filled ${selector} with value`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to force fill: ${(error as Error).message}`,
+      message: `Failed to force fill: ${(error as Error).message}`
     };
   }
 }
@@ -864,7 +864,7 @@ export async function forceSetValue(
  */
 export async function typeText(
   world: ICustomWorld,
-  text: string,
+  text: string
 ): Promise<{ success: boolean; message: string }> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -873,10 +873,10 @@ export async function typeText(
   try {
     const result = await world.mcpClients.playwright.callTool({
       name: 'type',
-      arguments: { text },
+      arguments: { text }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     let parsed: any;
 
     try {
@@ -885,18 +885,18 @@ export async function typeText(
       // If JSON parse fails, treat the response as success if it's text
       return {
         success: true,
-        message: `Typed text: "${text}"`,
+        message: `Typed text: "${text}"`
       };
     }
 
     return {
       success: parsed.success !== false,
-      message: parsed.message || `Typed text: "${text}"`,
+      message: parsed.message || `Typed text: "${text}"`
     };
   } catch (error) {
     return {
       success: false,
-      message: `Failed to type text: ${(error as Error).message}`,
+      message: `Failed to type text: ${(error as Error).message}`
     };
   }
 }
@@ -909,7 +909,7 @@ export async function typeText(
  */
 export async function inspectElements(
   world: ICustomWorld,
-  selector: string,
+  selector: string
 ): Promise<{ success: boolean; elements: any[]; message: string }> {
   if (!world.mcpClients?.playwright) {
     throw new Error('Playwright MCP client not initialized');
@@ -930,21 +930,21 @@ export async function inspectElements(
 
     const result = await world.mcpClients.playwright.callTool({
       name: 'evaluateScript',
-      arguments: { script },
+      arguments: { script }
     });
 
-    const content = result.content as Array<{ type: string; text: string }>;
+    const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
     return {
       success: true,
       elements: parsed.result || [],
-      message: `Found ${(parsed.result || []).length} elements`,
+      message: `Found ${(parsed.result || []).length} elements`
     };
   } catch (error) {
     return {
       success: false,
       elements: [],
-      message: `Failed to inspect: ${(error as Error).message}`,
+      message: `Failed to inspect: ${(error as Error).message}`
     };
   }
 }

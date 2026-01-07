@@ -31,7 +31,7 @@ export function loadCredentials(): CredentialsConfig {
 
   if (!fs.existsSync(credentialsPath)) {
     throw new Error(
-      `Credentials file not found at ${credentialsPath}. Please copy config.credentials.example.json to config.credentials.json and fill in your values.`,
+      `Credentials file not found at ${credentialsPath}. Please copy config.credentials.example.json to config.credentials.json and fill in your values.`
     );
   }
 

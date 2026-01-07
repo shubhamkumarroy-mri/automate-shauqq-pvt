@@ -6,7 +6,7 @@
  * exploration and test creation workflows.
  */
 
-import { Given, When, Then, Before, After } from '@cucumber/cucumber';
+import { Given, When, Then, After } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { ICustomWorld } from '../support/custom-world.js';
 import * as playwrightHelpers from '../utils/playwright-mcp-helpers.js';
@@ -29,14 +29,14 @@ Given('I am on the {string} page', async function (this: ICustomWorld, pageName:
   const pageMap: Record<string, string> = {
     'example homepage': 'https://example.com',
     'playwright testing': 'https://playwright.dev',
-    github: 'https://github.com',
-    cucumber: 'https://cucumber.io',
+    'github': 'https://github.com',
+    'cucumber': 'https://cucumber.io'
   };
 
   const url = pageMap[pageName.toLowerCase()];
   if (!url) {
     throw new Error(
-      `Unknown page: ${pageName}. Available pages: ${Object.keys(pageMap).join(', ')}`,
+      `Unknown page: ${pageName}. Available pages: ${Object.keys(pageMap).join(', ')}`
     );
   }
 
@@ -58,7 +58,7 @@ When(
     const result = await playwrightHelpers.fillInput(this, selector, substitutedText);
     this.attach(`Fill result: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
-  },
+  }
 );
 
 When('I take a screenshot named {string}', async function (this: ICustomWorld, name: string) {
@@ -86,12 +86,12 @@ When('I wait for button with text {string}', async function (this: ICustomWorld,
 });
 
 When('I wait for {int} seconds', async function (this: ICustomWorld, seconds: number) {
-  await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
   this.attach(`Waited ${seconds} second(s)`, 'text/plain');
 });
 
 When('I wait for {int} second', async function (this: ICustomWorld, seconds: number) {
-  await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  await new Promise(resolve => setTimeout(resolve, seconds * 1000));
   this.attach(`Waited ${seconds} second(s)`, 'text/plain');
 });
 /**
@@ -101,8 +101,8 @@ When('I wait for {int} second', async function (this: ICustomWorld, seconds: num
 When('I query elements matching {string}', async function (this: ICustomWorld, selector: string) {
   const result = await playwrightHelpers.queryElements(this, selector);
   this.attach(
-    `Found ${result.count} elements matching "${selector}":\n${result.elements.map((el) => `- ${el.text} (visible: ${el.visible})`).join('\n')}`,
-    'text/plain',
+    `Found ${result.count} elements matching "${selector}":\n${result.elements.map(el => `- ${el.text} (visible: ${el.visible})`).join('\n')}`,
+    'text/plain'
   );
   this.lastQueryResult = result;
 });
@@ -111,7 +111,7 @@ When('I inspect element {string}', async function (this: ICustomWorld, selector:
   const result = await playwrightHelpers.inspectElement(this, selector);
   this.attach(
     `Element HTML:\n${result.html}\n\nAttributes:\n${JSON.stringify(result.attributes, null, 2)}`,
-    'text/plain',
+    'text/plain'
   );
   this.lastInspectResult = result;
 });
@@ -122,7 +122,7 @@ Then(
     const isVisible = await playwrightHelpers.isElementVisible(this, selector);
     expect(isVisible).toBeTruthy();
     this.attach(`Element "${selector}" is visible`, 'text/plain');
-  },
+  }
 );
 
 Then(
@@ -131,7 +131,7 @@ Then(
     const isVisible = await playwrightHelpers.isElementVisible(this, selector);
     expect(isVisible).toBeFalsy();
     this.attach(`Element "${selector}" is not visible`, 'text/plain');
-  },
+  }
 );
 
 Then(
@@ -140,7 +140,7 @@ Then(
     const result = await playwrightHelpers.queryElements(this, selector);
     expect(result.count).toBe(expectedCount);
     this.attach(`Found ${result.count} elements matching "${selector}"`, 'text/plain');
-  },
+  }
 );
 
 Then(
@@ -150,9 +150,9 @@ Then(
     expect(result.count).toBeGreaterThanOrEqual(minCount);
     this.attach(
       `Found ${result.count} elements matching "${selector}" (expected at least ${minCount})`,
-      'text/plain',
+      'text/plain'
     );
-  },
+  }
 );
 
 Then(
@@ -160,14 +160,14 @@ Then(
   async function (this: ICustomWorld, expectedText: string) {
     if (!this.lastQueryResult) {
       throw new Error(
-        'No previous query result. Query elements first using "I query elements matching..."',
+        'No previous query result. Query elements first using "I query elements matching..."'
       );
     }
 
     const allText = this.lastQueryResult.elements.map((el: any) => el.text).join(' ');
     expect(allText).toContain(expectedText);
     this.attach(`Text content includes: "${expectedText}"`, 'text/plain');
-  },
+  }
 );
 
 /**
@@ -178,7 +178,7 @@ When('I get the current page state', async function (this: ICustomWorld) {
   const state = await playwrightHelpers.getPageState(this);
   this.attach(
     `Page State:\nURL: ${state.url}\nTitle: ${state.title}\nHTML length: ${state.content.length} characters`,
-    'text/plain',
+    'text/plain'
   );
   this.lastPageState = state;
 });
@@ -189,7 +189,7 @@ Then(
     const state = await playwrightHelpers.getPageState(this);
     expect(state.title).toBe(expectedTitle);
     this.attach(`Page title: "${state.title}"`, 'text/plain');
-  },
+  }
 );
 
 Then('the page URL should contain {string}', async function (this: ICustomWorld, urlPart: string) {
@@ -216,7 +216,7 @@ When('I execute script {string}', async function (this: ICustomWorld, script: st
   const result = await playwrightHelpers.evaluateScript(this, script);
   this.attach(
     `Script execution:\nCode: ${script}\nResult: ${JSON.stringify(result.result, null, 2)}\nError: ${result.error || 'None'}`,
-    'text/plain',
+    'text/plain'
   );
   this.lastScriptResult = result;
 });
@@ -231,7 +231,7 @@ Then(
     const actualResult = JSON.stringify(this.lastScriptResult.result);
     expect(actualResult).toContain(expectedResult);
     this.attach(`Script result matches: "${expectedResult}"`, 'text/plain');
-  },
+  }
 );
 
 /**
@@ -246,10 +246,10 @@ When('I fill the following form fields:', async function (this: ICustomWorld, da
 
   const results = await playwrightHelpers.fillForm(this, formData);
 
-  const resultMessages = results.map((r) => `${r.success ? '✓' : '✗'} ${r.message}`).join('\n');
+  const resultMessages = results.map(r => `${r.success ? '✓' : '✗'} ${r.message}`).join('\n');
   this.attach(`Form fill results:\n${resultMessages}`, 'text/plain');
 
-  const allSuccessful = results.every((r) => r.success);
+  const allSuccessful = results.every(r => r.success);
   expect(allSuccessful).toBeTruthy();
 });
 
@@ -301,7 +301,7 @@ When(
     const result = await playwrightHelpers.clickDialogButton(this, text);
     this.attach(`Clicked dialog button: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
-  },
+  }
 );
 
 When('I click on combobox with name {string}', async function (this: ICustomWorld, name: string) {
@@ -322,7 +322,7 @@ When(
     const result = await playwrightHelpers.clickElement(this, `#${id}`);
     this.attach(`Clicked select2 container: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
-  },
+  }
 );
 
 When('I click on text {string}', async function (this: ICustomWorld, text: string) {
@@ -355,18 +355,18 @@ Given('I explore the page structure', async function (this: ICustomWorld) {
   const exploration: Record<string, any> = {
     url: state.url,
     title: state.title,
-    elements: {},
+    elements: {}
   };
 
   for (const elementType of elementTypes) {
     const result = await playwrightHelpers.queryElements(this, elementType);
     exploration.elements[elementType] = {
       count: result.count,
-      visible: result.elements.filter((el) => el.visible).length,
+      visible: result.elements.filter(el => el.visible).length,
       samples: result.elements
-        .filter((el) => el.visible && el.text)
+        .filter(el => el.visible && el.text)
         .slice(0, 3)
-        .map((el) => el.text),
+        .map(el => el.text)
     };
   }
 
@@ -384,28 +384,30 @@ Then(
       expect(result.count).toBeGreaterThan(0);
       this.attach(`✓ Found ${result.count} "${elementType}" elements`, 'text/plain');
     }
-  },
+  }
 );
 
 /**
  * FORCE INTERACTION STEPS (bypass actionability checks via script execution)
  */
 
-When('I force click on button with text {string}', async function (this: ICustomWorld, text: string) {
-  const result = await playwrightHelpers.forceClickByText(this, 'button', text);
-  this.attach(`Force clicked button: ${result.message}`, 'text/plain');
-  expect(result.success).toBeTruthy();
-});
+When(
+  'I force click on button with text {string}',
+  async function (this: ICustomWorld, text: string) {
+    const result = await playwrightHelpers.forceClickByText(this, 'button', text);
+    this.attach(`Force clicked button: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
 
-When('I force click on {string} with text {string}', async function (
-  this: ICustomWorld,
-  tag: string,
-  text: string,
-) {
-  const result = await playwrightHelpers.forceClickByText(this, tag, text);
-  this.attach(`Force clicked ${tag}: ${result.message}`, 'text/plain');
-  expect(result.success).toBeTruthy();
-});
+When(
+  'I force click on {string} with text {string}',
+  async function (this: ICustomWorld, tag: string, text: string) {
+    const result = await playwrightHelpers.forceClickByText(this, tag, text);
+    this.attach(`Force clicked ${tag}: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
 
 When(
   'I force fill {string} with {string}',
@@ -413,18 +415,18 @@ When(
     const result = await playwrightHelpers.forceSetValue(this, selector, text);
     this.attach(`Force filled: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
-  },
+  }
 );
 
-When('I force click on gridcell with text {string}', async function (
-  this: ICustomWorld,
-  text: string,
-) {
-  // Use partial match for gridcells since they might have extra whitespace
-  const result = await playwrightHelpers.forceClickByText(this, '[role="gridcell"]', text, true);
-  this.attach(`Force clicked gridcell: ${result.message}`, 'text/plain');
-  expect(result.success).toBeTruthy();
-});
+When(
+  'I force click on gridcell with text {string}',
+  async function (this: ICustomWorld, text: string) {
+    // Use partial match for gridcells since they might have extra whitespace
+    const result = await playwrightHelpers.forceClickByText(this, '[role="gridcell"]', text, true);
+    this.attach(`Force clicked gridcell: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
 
 When('I type {string}', async function (this: ICustomWorld, text: string) {
   const substitutedText = substituteCredentials(text);
@@ -439,14 +441,14 @@ When('I force click on selector {string}', async function (this: ICustomWorld, s
   expect(result.success).toBeTruthy();
 });
 
-When('I force click on input with text {string}', async function (
-  this: ICustomWorld,
-  text: string,
-) {
-  const result = await playwrightHelpers.forceClickByText(this, 'input', text);
-  this.attach(`Force clicked input: ${result.message}`, 'text/plain');
-  expect(result.success).toBeTruthy();
-});
+When(
+  'I force click on input with text {string}',
+  async function (this: ICustomWorld, text: string) {
+    const result = await playwrightHelpers.forceClickByText(this, 'input', text);
+    this.attach(`Force clicked input: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
 
 /**
  * CLEANUP & SESSION MANAGEMENT
@@ -466,7 +468,6 @@ When('I debug inspect {string}', async function (this: ICustomWorld, selector: s
   const result = await playwrightHelpers.inspectElements(this, selector);
   this.attach(
     `Inspected "${selector}":\n${JSON.stringify(result.elements, null, 2)}`,
-    'text/plain',
+    'text/plain'
   );
 });
-

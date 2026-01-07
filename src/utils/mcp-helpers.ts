@@ -18,13 +18,13 @@ export async function callMcpTool(
   world: ICustomWorld,
   server: 'github' | 'specification' | 'testExecution',
   toolName: string,
-  args?: Record<string, any>,
+  args?: Record<string, any>
 ): Promise<any> {
   const client = world.mcpClients?.[server];
 
   if (!client) {
     throw new Error(
-      `MCP client '${server}' is not available. Ensure MCP servers are initialized in hooks.`,
+      `MCP client '${server}' is not available. Ensure MCP servers are initialized in hooks.`
     );
   }
 
@@ -34,10 +34,10 @@ export async function callMcpTool(
         method: 'tools/call',
         params: {
           name: toolName,
-          arguments: args || {},
-        },
+          arguments: args || {}
+        }
       },
-      z.any(),
+      z.any()
     );
 
     return response;
@@ -54,11 +54,11 @@ export async function callMcpTool(
  */
 export async function getChangedFiles(
   world: ICustomWorld,
-  state: 'staged' | 'unstaged' | 'all' = 'all',
+  state: 'staged' | 'unstaged' | 'all' = 'all'
 ): Promise<any> {
   const response = await callMcpTool(world, 'github', 'get_changed_files', { state });
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -75,11 +75,11 @@ export async function getChangedFiles(
 export async function getFileDiff(
   world: ICustomWorld,
   filePath: string,
-  staged: boolean = false,
+  staged = false
 ): Promise<string> {
   const response = await callMcpTool(world, 'github', 'get_file_diff', { filePath, staged });
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return response.content[0].text;
   }
 
@@ -94,7 +94,7 @@ export async function getFileDiff(
 export async function listFeatures(world: ICustomWorld): Promise<any> {
   const response = await callMcpTool(world, 'specification', 'list_features');
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -110,7 +110,7 @@ export async function listFeatures(world: ICustomWorld): Promise<any> {
 export async function parseFeature(world: ICustomWorld, filePath: string): Promise<any> {
   const response = await callMcpTool(world, 'specification', 'parse_feature', { filePath });
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -125,7 +125,7 @@ export async function parseFeature(world: ICustomWorld, filePath: string): Promi
 export async function analyzeCoverage(world: ICustomWorld): Promise<any> {
   const response = await callMcpTool(world, 'specification', 'analyze_coverage');
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -140,11 +140,11 @@ export async function analyzeCoverage(world: ICustomWorld): Promise<any> {
  */
 export async function runTests(
   world: ICustomWorld,
-  options?: { feature?: string; tags?: string; dryRun?: boolean },
+  options?: { feature?: string; tags?: string; dryRun?: boolean }
 ): Promise<any> {
   const response = await callMcpTool(world, 'testExecution', 'run_tests', options);
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -160,7 +160,7 @@ export async function runTests(
 export async function validateSteps(world: ICustomWorld, feature?: string): Promise<any> {
   const response = await callMcpTool(world, 'testExecution', 'validate_steps', { feature });
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 
@@ -175,7 +175,7 @@ export async function validateSteps(world: ICustomWorld, feature?: string): Prom
 export async function getTestResults(world: ICustomWorld): Promise<any> {
   const response = await callMcpTool(world, 'testExecution', 'get_test_results');
 
-  if (response.content && response.content[0]) {
+  if (response.content?.[0]) {
     return JSON.parse(response.content[0].text);
   }
 

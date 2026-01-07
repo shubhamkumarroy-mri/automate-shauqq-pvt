@@ -18,18 +18,18 @@ class SpecificationMCPServer {
     this.server = new Server(
       {
         name: 'specification-mcp-server',
-        version: '1.0.0',
+        version: '1.0.0'
       },
       {
         capabilities: {
-          tools: {},
-        },
-      },
+          tools: {}
+        }
+      }
     );
 
     this.setupToolHandlers();
 
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
+    this.server.onerror = error => console.error('[MCP Error]', error);
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
@@ -44,8 +44,8 @@ class SpecificationMCPServer {
           description: 'List all Gherkin feature files in the project',
           inputSchema: {
             type: 'object',
-            properties: {},
-          },
+            properties: {}
+          }
         },
         {
           name: 'parse_feature',
@@ -55,11 +55,11 @@ class SpecificationMCPServer {
             properties: {
               filePath: {
                 type: 'string',
-                description: 'Relative path to the feature file',
-              },
+                description: 'Relative path to the feature file'
+              }
             },
-            required: ['filePath'],
-          },
+            required: ['filePath']
+          }
         },
         {
           name: 'extract_steps',
@@ -69,20 +69,20 @@ class SpecificationMCPServer {
             properties: {
               filePath: {
                 type: 'string',
-                description: 'Specific feature file (optional)',
-              },
-            },
-          },
+                description: 'Specific feature file (optional)'
+              }
+            }
+          }
         },
         {
           name: 'analyze_coverage',
           description: 'Analyze which scenarios have complete step definitions',
           inputSchema: {
             type: 'object',
-            properties: {},
-          },
-        },
-      ],
+            properties: {}
+          }
+        }
+      ]
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -110,9 +110,9 @@ class SpecificationMCPServer {
           content: [
             {
               type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`
+            }
+          ]
         };
       }
     });
@@ -122,18 +122,18 @@ class SpecificationMCPServer {
     const featuresDir = join(this.projectPath, 'features');
     const files = this.findFeatureFiles(featuresDir);
 
-    const features = files.map((file) => ({
+    const features = files.map(file => ({
       path: relative(this.projectPath, file),
-      name: file.split('/').pop(),
+      name: file.split('/').pop()
     }));
 
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ features, count: features.length }, null, 2),
-        },
-      ],
+          text: JSON.stringify({ features, count: features.length }, null, 2)
+        }
+      ]
     };
   }
 
@@ -153,7 +153,7 @@ class SpecificationMCPServer {
           results.push(filePath);
         }
       });
-    } catch (error) {
+    } catch {
       // Directory might not exist
     }
 
@@ -171,7 +171,7 @@ class SpecificationMCPServer {
         description: '',
         background: [] as string[],
         scenarios: [] as any[],
-        tags: [] as string[],
+        tags: [] as string[]
       };
 
       let currentSection: 'feature' | 'background' | 'scenario' | null = null;
@@ -181,7 +181,7 @@ class SpecificationMCPServer {
         const trimmed = line.trim();
 
         if (trimmed.startsWith('@')) {
-          const tags = trimmed.split(/\s+/).filter((t) => t.startsWith('@'));
+          const tags = trimmed.split(/\s+/).filter(t => t.startsWith('@'));
           if (!currentScenario) {
             feature.tags.push(...tags);
           } else {
@@ -199,11 +199,11 @@ class SpecificationMCPServer {
             type: isOutline ? 'outline' : 'scenario',
             tags: [],
             steps: [],
-            line: index + 1,
+            line: index + 1
           };
           feature.scenarios.push(currentScenario);
           currentSection = 'scenario';
-        } else if (trimmed.match(/^(Given|When|Then|And|But)\s/)) {
+        } else if (/^(Given|When|Then|And|But)\s/.exec(trimmed)) {
           const step = trimmed;
           if (currentSection === 'background') {
             feature.background.push(step);
@@ -224,13 +224,13 @@ class SpecificationMCPServer {
                 filePath,
                 feature,
                 totalScenarios: feature.scenarios.length,
-                totalSteps: feature.scenarios.reduce((sum, s) => sum + s.steps.length, 0),
+                totalSteps: feature.scenarios.reduce((sum, s) => sum + s.steps.length, 0)
               },
               null,
-              2,
-            ),
-          },
-        ],
+              2
+            )
+          }
+        ]
       };
     } catch (error) {
       throw new Error(`Failed to parse feature: ${error}`);
@@ -248,7 +248,7 @@ class SpecificationMCPServer {
       When: new Set(),
       Then: new Set(),
       And: new Set(),
-      But: new Set(),
+      But: new Set()
     };
 
     files.forEach((file) => {
@@ -258,7 +258,7 @@ class SpecificationMCPServer {
 
         lines.forEach((line) => {
           const trimmed = line.trim();
-          const match = trimmed.match(/^(Given|When|Then|And|But)\s+(.+)/);
+          const match = /^(Given|When|Then|And|But)\s+(.+)/.exec(trimmed);
 
           if (match) {
             const [, type, step] = match;
@@ -266,7 +266,7 @@ class SpecificationMCPServer {
             stepsByType[type].add(step);
           }
         });
-      } catch (error) {
+      } catch {
         // Skip file on error
       }
     });
@@ -284,14 +284,14 @@ class SpecificationMCPServer {
                 When: Array.from(stepsByType.When),
                 Then: Array.from(stepsByType.Then),
                 And: Array.from(stepsByType.And),
-                But: Array.from(stepsByType.But),
-              },
+                But: Array.from(stepsByType.But)
+              }
             },
             null,
-            2,
-          ),
-        },
-      ],
+            2
+          )
+        }
+      ]
     };
   }
 
@@ -305,7 +305,7 @@ class SpecificationMCPServer {
       const featureStepStrings = JSON.parse(featureSteps.content[0].text).steps || [];
 
       // Parse step definitions (remove regex patterns and return the pattern text)
-      const definedPatterns = definedSteps.map((step) => step.pattern);
+      const definedPatterns = definedSteps.map(step => step.pattern);
 
       // Find undefined steps
       const undefinedSteps: string[] = [];
@@ -337,28 +337,28 @@ class SpecificationMCPServer {
             ? Math.round((definedFeatureSteps.length / featureStepStrings.length) * 100)
             : 100,
         undefined: undefinedSteps,
-        defined: definedPatterns.length,
+        defined: definedPatterns.length
       };
 
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(coverage, null, 2),
-          },
-        ],
+            text: JSON.stringify(coverage, null, 2)
+          }
+        ]
       };
     } catch (error) {
       throw new Error(`Failed to analyze coverage: ${error}`);
     }
   }
 
-  private extractDefinedSteps(): Array<{ pattern: string; type: string }> {
+  private extractDefinedSteps(): { pattern: string; type: string }[] {
     const stepsDir = join(this.projectPath, 'src', 'steps');
-    const steps: Array<{ pattern: string; type: string }> = [];
+    const steps: { pattern: string; type: string }[] = [];
 
     try {
-      const files = readdirSync(stepsDir).filter((f) => f.endsWith('.ts'));
+      const files = readdirSync(stepsDir).filter(f => f.endsWith('.ts'));
 
       files.forEach((file) => {
         try {
@@ -367,7 +367,7 @@ class SpecificationMCPServer {
 
           lines.forEach((line) => {
             // Match patterns like: Given('pattern', ...)
-            const match = line.match(/(Given|When|Then|And|But)\s*\(\s*['"]([^'"]+)['"]/);
+            const match = /(Given|When|Then|And|But)\s*\(\s*['"]([^'"]+)['"]/.exec(line);
             if (match) {
               const [, type, pattern] = match;
               // Convert Cucumber expressions to regex patterns
@@ -375,11 +375,11 @@ class SpecificationMCPServer {
               steps.push({ pattern: regexPattern, type });
             }
           });
-        } catch (error) {
+        } catch {
           // Skip file on error
         }
       });
-    } catch (error) {
+    } catch {
       // Steps directory might not exist
     }
 
@@ -392,7 +392,7 @@ class SpecificationMCPServer {
    */
   private cucumberExpressionToRegex(pattern: string): string {
     // Escape special regex characters except for Cucumber parameters
-    let regexPattern = pattern
+    const regexPattern = pattern
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
       .replace(/\\\{string\\\}/g, '.*?') // {string} -> match any text
       .replace(/\\\{int\\\}/g, '-?\\d+') // {int} -> match integers
