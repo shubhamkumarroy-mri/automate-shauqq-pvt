@@ -213,9 +213,10 @@ Then('the page should contain {string}', async function (this: ICustomWorld, tex
  */
 
 When('I execute script {string}', async function (this: ICustomWorld, script: string) {
-  const result = await playwrightHelpers.evaluateScript(this, script);
+  const substitutedScript = substituteCredentials(script);
+  const result = await playwrightHelpers.evaluateScript(this, substitutedScript);
   this.attach(
-    `Script execution:\nCode: ${script}\nResult: ${JSON.stringify(result.result, null, 2)}\nError: ${result.error || 'None'}`,
+    `Script execution:\nCode: ${substitutedScript}\nResult: ${JSON.stringify(result.result, null, 2)}\nError: ${result.error || 'None'}`,
     'text/plain'
   );
   this.lastScriptResult = result;
@@ -422,7 +423,8 @@ When(
   'I force click on gridcell with text {string}',
   async function (this: ICustomWorld, text: string) {
     // Use partial match for gridcells since they might have extra whitespace
-    const result = await playwrightHelpers.forceClickByText(this, '[role="gridcell"]', text, true);
+    const substitutedText = substituteCredentials(text);
+    const result = await playwrightHelpers.forceClickByText(this, '[role="gridcell"]', substitutedText, true);
     this.attach(`Force clicked gridcell: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
   }

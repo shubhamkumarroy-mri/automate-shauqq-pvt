@@ -34,9 +34,19 @@ async function initBrowser() {
         timeout: 30000 // 30 second timeout
       });
       console.error('Browser launched successfully');
-      context = await browser.newContext({
+      
+      // Check if auth-state.json exists and use it
+      const authStatePath = path.resolve('auth-state.json');
+      const contextOptions: any = {
         viewport: { width: 1280, height: 720 }
-      });
+      };
+      
+      if (fs.existsSync(authStatePath)) {
+        contextOptions.storageState = authStatePath;
+        console.error('Loading auth state from:', authStatePath);
+      }
+      
+      context = await browser.newContext(contextOptions);
       console.error('Browser context created');
       page = await context.newPage();
       console.error('New page created');

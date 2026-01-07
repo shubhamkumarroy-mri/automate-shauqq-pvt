@@ -1,5 +1,6 @@
 import { ICustomWorld } from './custom-world';
 import { config } from './config';
+import { credentials } from './credentials';
 import { Before, After, BeforeAll, AfterAll, Status, setDefaultTimeout } from '@cucumber/cucumber';
 import {
   chromium,
@@ -44,6 +45,39 @@ BeforeAll(async function () {
       browser = await chromium.launch(config.browserOptions);
   }
   await ensureDir(tracesDir);
+});
+
+// Login once per feature for features tagged with @requires-login
+BeforeAll({ tags: '@requires-login' }, async function () {
+  console.log('Performing login before feature...');
+  
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  // Navigate and login
+  await page.goto(credentials.testEnvironment.loginUrl);
+  await page.waitForSelector('input#username', { state: 'visible' });
+  await page.fill('input#username', credentials.testUser.username);
+  await page.fill('input#password', credentials.testUser.password);
+  await page.click("button:has-text('Sign In')");
+  
+  // Wait for Continue button and click it
+  try {
+    await page.waitForSelector("button:has-text('Continue'):not([disabled])", { timeout: 10000 });
+    await page.click("button:has-text('Continue'):not([disabled])");
+    // Wait for dashboard to load
+    await page.waitForSelector("[data-test-id='dashboard'], .dashboard, main, h1, h2", { timeout: 10000 });
+  } catch (e) {
+    console.log('Continue button or dashboard not found, but continuing anyway');
+  }
+  
+  // Save the authenticated state
+  await context.storageState({ path: 'auth-state.json' });
+  
+  await page.close();
+  await context.close();
+  
+  console.log('Login completed and state saved!');
 });
 
 Before({ tags: '@ignore' }, function () {
@@ -146,11 +180,32 @@ Before(async function (this: ICustomWorld, { pickle }) {
   }
 
   // customize the [browser context](https://playwright.dev/docs/next/api/class-browser#browsernewcontextoptions)
-  this.context = await browser.newContext({
+  const contextOptions: any = {
     acceptDownloads: true,
     recordVideo: process.env.PWVIDEO ? { dir: 'screenshots' } : undefined,
     viewport: { width: 1200, height: 800 }
-  });
+  };
+
+  // Use saved auth state if feature has @requires-login tag
+  const hasLoginTag = pickle.tags?.some((tag: any) => tag.name === '@requires-login');
+  if (hasLoginTag) {
+    try {
+      // Load the saved authentication state
+      const { existsSync } = await import('fs');
+      const { resolve } = await import('path');
+      const authStatePath = resolve('auth-state.json');
+      if (existsSync(authStatePath)) {
+        contextOptions.storageState = authStatePath;
+        console.log('Loading auth state from:', authStatePath);
+      } else {
+        console.log('Auth state file not found at:', authStatePath);
+      }
+    } catch (e) {
+      console.error('Error loading auth state:', e);
+    }
+  }
+
+  this.context = await browser.newContext(contextOptions);
   this.server = await request.newContext({
     // All requests we send go to this API endpoint.
     baseURL: config.BASE_API_URL
