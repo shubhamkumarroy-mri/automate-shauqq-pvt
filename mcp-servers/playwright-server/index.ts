@@ -17,12 +17,15 @@ import { chromium } from 'playwright';
 let browser: any = null;
 let context: any = null;
 let page: any = null;
+let currentRunDirectory: string | null = null;
+let featureName: string = 'test';
+
 // Activity timeout check
 function updateActivity() {
   // Placeholder for activity tracking
 }
 
-const isHeadless = process.env.PLAYWRIGHT_HEADLESS !== 'true';
+const isHeadless = process.env.PLAYWRIGHT_HEADLESS !== 'false'; // Can be controlled via env variable
 
 async function initBrowser() {
   if (!browser) {
@@ -50,6 +53,14 @@ async function initBrowser() {
       console.error('Browser context created');
       page = await context.newPage();
       console.error('New page created');
+      
+      // Create run directory for screenshots
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      currentRunDirectory = path.join('./screenshots', `${featureName}-${timestamp}`);
+      if (!fs.existsSync(currentRunDirectory)) {
+        fs.mkdirSync(currentRunDirectory, { recursive: true });
+      }
+      console.error(`Screenshots will be saved to: ${currentRunDirectory}`);
     } catch (error) {
       console.error('Browser initialization failed:', error);
       throw error;
@@ -76,6 +87,8 @@ async function closeBrowser() {
       browser = null;
       context = null;
       page = null;
+      currentRunDirectory = null;
+      featureName = 'test';
     }
   }
 }
@@ -147,15 +160,10 @@ async function screenshot(
 ): Promise<{ success: boolean; path: string; message: string }> {
   try {
     const currentPage = await initBrowser();
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = name ? `${name}-${timestamp}.png` : `screenshot-${timestamp}.png`;
-    const filepath = path.join('./screenshots', filename);
-
-    // Ensure directory exists
-    const dir = path.dirname(filepath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    
+    // Use the run directory created during browser init
+    const filename = name ? `${name.replace(/\//g, '-')}.png` : `screenshot.png`;
+    const filepath = path.join(currentRunDirectory!, filename);
 
     await currentPage.screenshot({ path: filepath });
     return {
@@ -297,6 +305,197 @@ async function waitForSelector(
   }
 }
 
+async function hover(
+  selector: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    await currentPage.hover(selector, { timeout: 10000 });
+    return {
+      success: true,
+      message: `Successfully hovered over element: ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Hover failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+async function clickAtCoordinates(
+  x: number,
+  y: number,
+  options?: { button?: 'left' | 'right' | 'middle'; clickCount?: number; delay?: number }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    await currentPage.mouse.click(x, y, {
+      button: options?.button || 'left',
+      clickCount: options?.clickCount || 1,
+      delay: options?.delay || 0
+    });
+    return {
+      success: true,
+      message: `Successfully clicked at coordinates (${x}, ${y})`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Click at coordinates failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+async function getTextAtCoordinates(
+  x: number,
+  y: number
+): Promise<{ success: boolean; text: string; element: any; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    const result = await currentPage.evaluate((coords: { x: number; y: number }) => {
+      const element = document.elementFromPoint(coords.x, coords.y);
+      if (!element) return null;
+      
+      return {
+        tag: element.tagName,
+        text: element.textContent?.trim() || '',
+        attributes: Array.from(element.attributes).map((a: any) => ({ 
+          name: a.name, 
+          value: a.value 
+        })),
+        boundingBox: element.getBoundingClientRect()
+      };
+    }, { x, y });
+    
+    if (!result) {
+      return {
+        success: false,
+        text: '',
+        element: null,
+        message: `No element found at coordinates (${x}, ${y})`
+      };
+    }
+    
+    return {
+      success: true,
+      text: result.text,
+      element: result,
+      message: `Found element at (${x}, ${y}): ${result.tag}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      text: '',
+      element: null,
+      message: `Get text at coordinates failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+async function dispatchEvent(
+  selector: string,
+  eventType: string,
+  eventProperties?: Record<string, any>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    await currentPage.dispatchEvent(selector, eventType, eventProperties || {});
+    return {
+      success: true,
+      message: `Successfully dispatched ${eventType} event on ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Dispatch event failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+async function pressKey(
+  key: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    await currentPage.keyboard.press(key);
+    return {
+      success: true,
+      message: `Successfully pressed key: ${key}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Press key failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+async function inspectDetailed(
+  selector: string
+): Promise<{ success: boolean; details: any; message: string }> {
+  try {
+    const currentPage = await initBrowser();
+    const result = await currentPage.evaluate((sel: string) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      
+      const computedStyle = window.getComputedStyle(el);
+      const rect = el.getBoundingClientRect();
+      
+      return {
+        tag: el.tagName,
+        attributes: Array.from(el.attributes).map((a: any) => ({ name: a.name, value: a.value })),
+        textContent: el.textContent?.trim(),
+        innerHTML: el.innerHTML.substring(0, 500), // Truncate for safety
+        boundingBox: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+          left: rect.left
+        },
+        offsetParent: el.offsetParent !== null,
+        computedStyle: {
+          display: computedStyle.display,
+          visibility: computedStyle.visibility,
+          opacity: computedStyle.opacity,
+          pointerEvents: computedStyle.pointerEvents,
+          zIndex: computedStyle.zIndex,
+          position: computedStyle.position
+        },
+        isVisible: el.offsetParent !== null && 
+                   computedStyle.display !== 'none' && 
+                   computedStyle.visibility !== 'hidden' &&
+                   parseFloat(computedStyle.opacity) > 0
+      };
+    }, selector);
+    
+    if (!result) {
+      return {
+        success: false,
+        details: null,
+        message: `Element not found: ${selector}`
+      };
+    }
+    
+    return {
+      success: true,
+      details: result,
+      message: `Successfully inspected element: ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      details: null,
+      message: `Inspect detailed failed: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
 async function closeBrowserSession(): Promise<{ success: boolean; message: string }> {
   try {
     await closeBrowser();
@@ -381,6 +580,20 @@ const tools: Tool[] = [
     }
   },
   {
+    name: 'setFeatureName',
+    description: 'Set the feature name for organizing screenshots',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Feature name to use for screenshot directory'
+        }
+      },
+      required: ['name']
+    }
+  },
+  {
     name: 'queryElements',
     description:
       'Query all elements matching a CSS selector and return their text content and visibility',
@@ -456,6 +669,118 @@ const tools: Tool[] = [
       type: 'object' as const,
       properties: {}
     }
+  },
+  {
+    name: 'hover',
+    description: 'Hover over an element to trigger hover states',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        selector: {
+          type: 'string',
+          description: 'CSS selector for the element to hover over'
+        }
+      },
+      required: ['selector']
+    }
+  },
+  {
+    name: 'dispatchEvent',
+    description: 'Dispatch a custom event on an element (e.g., mousedown, mouseup, input, change)',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        selector: {
+          type: 'string',
+          description: 'CSS selector for the target element'
+        },
+        eventType: {
+          type: 'string',
+          description: 'Event type to dispatch (e.g., "click", "mousedown", "input")'
+        },
+        eventProperties: {
+          type: 'object',
+          description: 'Optional event properties (bubbles, cancelable, etc.)'
+        }
+      },
+      required: ['selector', 'eventType']
+    }
+  },
+  {
+    name: 'pressKey',
+    description: 'Press a keyboard key (e.g., "Enter", "ArrowDown", "Escape")',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        key: {
+          type: 'string',
+          description: 'Key to press (e.g., "Enter", "ArrowDown", "Tab", "Escape")'
+        }
+      },
+      required: ['key']
+    }
+  },
+  {
+    name: 'inspectDetailed',
+    description: 'Get detailed information about an element including computed styles, position, and visibility',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        selector: {
+          type: 'string',
+          description: 'CSS selector for the element to inspect'
+        }
+      },
+      required: ['selector']
+    }
+  },
+  {
+    name: 'clickAtCoordinates',
+    description: 'Click at specific screen coordinates (x, y) regardless of DOM structure',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate (pixels from left)'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate (pixels from top)'
+        },
+        button: {
+          type: 'string',
+          description: 'Mouse button to click: "left", "right", or "middle" (default: "left")'
+        },
+        clickCount: {
+          type: 'number',
+          description: 'Number of clicks (default: 1, use 2 for double-click)'
+        },
+        delay: {
+          type: 'number',
+          description: 'Delay between mousedown and mouseup in milliseconds'
+        }
+      },
+      required: ['x', 'y']
+    }
+  },
+  {
+    name: 'getTextAtCoordinates',
+    description: 'Get the element and text at specific screen coordinates',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        x: {
+          type: 'number',
+          description: 'X coordinate (pixels from left)'
+        },
+        y: {
+          type: 'number',
+          description: 'Y coordinate (pixels from top)'
+        }
+      },
+      required: ['x', 'y']
+    }
   }
 ];
 
@@ -509,6 +834,10 @@ class PlaywrightMCPServer {
           case 'screenshot':
             result = await screenshot(args.name as string | undefined);
             break;
+          case 'setFeatureName':
+            featureName = (args.name as string).replace(/\W/g, '-').toLowerCase();
+            result = { success: true, message: `Feature name set to: ${featureName}` };
+            break;
           case 'queryElements':
             result = await queryElements(args.selector as string);
             break;
@@ -529,6 +858,36 @@ class PlaywrightMCPServer {
             break;
           case 'closeBrowserSession':
             result = await closeBrowserSession();
+            break;
+          case 'hover':
+            result = await hover(args.selector as string);
+            break;
+          case 'dispatchEvent':
+            result = await dispatchEvent(
+              args.selector as string,
+              args.eventType as string,
+              args.eventProperties as Record<string, any> | undefined
+            );
+            break;
+          case 'pressKey':
+            result = await pressKey(args.key as string);
+            break;
+          case 'inspectDetailed':
+            result = await inspectDetailed(args.selector as string);
+            break;
+          case 'clickAtCoordinates':
+            result = await clickAtCoordinates(
+              args.x as number,
+              args.y as number,
+              {
+                button: args.button as 'left' | 'right' | 'middle' | undefined,
+                clickCount: args.clickCount as number | undefined,
+                delay: args.delay as number | undefined
+              }
+            );
+            break;
+          case 'getTextAtCoordinates':
+            result = await getTextAtCoordinates(args.x as number, args.y as number);
             break;
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);

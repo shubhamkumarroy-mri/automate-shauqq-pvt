@@ -92,6 +92,9 @@ Before(async function (this: ICustomWorld, { pickle }) {
   this.startTime = new Date();
   this.testName = pickle.name.replace(/\W/g, '-');
 
+  // Extract feature name from pickle URI
+  const featureName = pickle.uri?.split('/').pop()?.replace('.feature', '') || 'unknown';
+
   // Initialize MCP clients
   this.mcpClients = {};
 
@@ -171,6 +174,16 @@ Before(async function (this: ICustomWorld, { pickle }) {
       }
     );
     await this.mcpClients.playwright.connect(playwrightTransport);
+
+    // Set feature name in playwright server for screenshot organization
+    try {
+      await this.mcpClients.playwright.callTool({
+        name: 'setFeatureName',
+        arguments: { name: featureName }
+      });
+    } catch (error) {
+      console.error('Failed to set feature name:', error);
+    }
 
     this.attach('MCP clients initialized successfully');
   } catch (error) {

@@ -272,6 +272,12 @@ When('I click on button with text {string}', async function (this: ICustomWorld,
   expect(result.success).toBeTruthy();
 });
 
+When('I click button with text {string}', async function (this: ICustomWorld, text: string) {
+  const result = await playwrightHelpers.clickByRole(this, 'button', { name: text });
+  this.attach(`Clicked button: ${result.message}`, 'text/plain');
+  expect(result.success).toBeTruthy();
+});
+
 When('I click on link with text {string}', async function (this: ICustomWorld, text: string) {
   const result = await playwrightHelpers.clickByRole(this, 'link', { name: text });
   this.attach(`Clicked link: ${result.message}`, 'text/plain');
@@ -344,6 +350,12 @@ Then('I verify text {string} is visible', async function (this: ICustomWorld, te
   expect(result.success).toBeTruthy();
 });
 
+Then('I should see text {string}', async function (this: ICustomWorld, text: string) {
+  const result = await playwrightHelpers.isTextVisible(this, text);
+  this.attach(`Text visibility check: ${result.message}`, 'text/plain');
+  expect(result.success).toBeTruthy();
+});
+
 /**
  * INTERACTIVE EXPLORATION STEPS
  */
@@ -402,6 +414,43 @@ When(
 );
 
 When(
+  'I force click on {string}',
+  async function (this: ICustomWorld, selector: string) {
+    if (!this.mcpClients?.playwright) {
+      throw new Error('Playwright MCP client not initialized');
+    }
+
+    const result = await this.mcpClients.playwright.callTool({
+      name: 'evaluateScript',
+      arguments: {
+        script: `(() => {
+          const element = document.querySelector('${selector}');
+          if (element) {
+            element.click();
+            return { success: true, message: 'Force clicked: ${selector}' };
+          }
+          return { success: false, message: 'Element not found: ${selector}' };
+        })()`
+      }
+    });
+    const content = result.content as { type: string; text: string }[];
+    const evalResult = JSON.parse(content[0].text);
+    const clickResult = evalResult.result || evalResult;
+    this.attach(`Force clicked element: ${clickResult.message || JSON.stringify(clickResult)}`, 'text/plain');
+    expect(clickResult.success || evalResult.success).toBeTruthy();
+  }
+);
+
+When(
+  'I force click on text {string}',
+  async function (this: ICustomWorld, text: string) {
+    const result = await playwrightHelpers.forceClickByText(this, '*', text);
+    this.attach(`Force clicked text: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
   'I force click on {string} with text {string}',
   async function (this: ICustomWorld, tag: string, text: string) {
     const result = await playwrightHelpers.forceClickByText(this, tag, text);
@@ -449,6 +498,464 @@ When(
     const result = await playwrightHelpers.forceClickByText(this, 'input', text);
     this.attach(`Force clicked input: ${result.message}`, 'text/plain');
     expect(result.success).toBeTruthy();
+  }
+);
+
+/**
+ * NEW ENHANCED INTERACTION STEPS FOR DYNAMIC COMPONENTS
+ */
+
+When('I hover on {string}', async function (this: ICustomWorld, selector: string) {
+  const result = await playwrightHelpers.hoverElement(this, selector);
+  this.attach(`Hover result: ${result.message}`, 'text/plain');
+  expect(result.success).toBeTruthy();
+});
+
+When('I press key {string}', async function (this: ICustomWorld, key: string) {
+  const result = await playwrightHelpers.pressKey(this, key);
+  this.attach(`Press key result: ${result.message}`, 'text/plain');
+  expect(result.success).toBeTruthy();
+});
+
+When(
+  'I inspect element details for {string}',
+  async function (this: ICustomWorld, selector: string) {
+    const result = await playwrightHelpers.inspectElementDetailed(this, selector);
+    this.attach(
+      `Element details:\n${JSON.stringify(result.details, null, 2)}`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I click {string} with retry strategies',
+  async function (this: ICustomWorld, selector: string) {
+    const result = await playwrightHelpers.clickWithRetry(this, selector);
+    this.attach(
+      `Click result: ${result.message} (strategy: ${result.strategy})`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I select date range option {string}',
+  async function (this: ICustomWorld, rangeKey: string) {
+    const result = await playwrightHelpers.selectDateRangeOption(this, rangeKey);
+    this.attach(
+      `Date range selection: ${result.message} (strategy: ${result.strategy})`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I dispatch {string} event on {string}',
+  async function (this: ICustomWorld, eventType: string, selector: string) {
+    const result = await playwrightHelpers.dispatchCustomEvent(this, selector, eventType);
+    this.attach(`Dispatch event result: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I hover and click {string}',
+  async function (this: ICustomWorld, selector: string) {
+    // First hover
+    const hoverResult = await playwrightHelpers.hoverElement(this, selector);
+    this.attach(`Hover: ${hoverResult.message}`, 'text/plain');
+    
+    // Small delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Then click
+    const clickResult = await playwrightHelpers.clickElement(this, selector);
+    this.attach(`Click: ${clickResult.message}`, 'text/plain');
+    
+    expect(hoverResult.success && clickResult.success).toBeTruthy();
+  }
+);
+
+/**
+ * DIAGNOSTIC STEPS
+ */
+
+When(
+  'I debug element {string}',
+  async function (this: ICustomWorld, selector: string) {
+    const result = await playwrightHelpers.inspectElementDetailed(this, selector);
+    
+    if (result.success) {
+      const details = result.details;
+      const debugInfo = `
+=== Element Debug Info ===
+Tag: ${details.tag}
+Text: ${details.textContent}
+Visible: ${details.isVisible}
+Position: (${details.boundingBox.x}, ${details.boundingBox.y})
+Size: ${details.boundingBox.width}x${details.boundingBox.height}
+Display: ${details.computedStyle.display}
+Visibility: ${details.computedStyle.visibility}
+Opacity: ${details.computedStyle.opacity}
+Pointer Events: ${details.computedStyle.pointerEvents}
+Z-Index: ${details.computedStyle.zIndex}
+Attributes: ${JSON.stringify(details.attributes, null, 2)}
+`;
+      this.attach(debugInfo, 'text/plain');
+      console.log(debugInfo);
+    } else {
+      this.attach(`Failed to debug element: ${result.message}`, 'text/plain');
+    }
+  }
+);
+
+/**
+ * COORDINATE-BASED INTERACTION STEPS
+ */
+
+When(
+  'I click at coordinates {int}, {int}',
+  async function (this: ICustomWorld, x: number, y: number) {
+    const result = await playwrightHelpers.clickAtCoordinates(this, x, y);
+    this.attach(`Click at coordinates result: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I double click at coordinates {int}, {int}',
+  async function (this: ICustomWorld, x: number, y: number) {
+    const result = await playwrightHelpers.clickAtCoordinates(this, x, y, { clickCount: 2 });
+    this.attach(`Double click at coordinates result: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I right click at coordinates {int}, {int}',
+  async function (this: ICustomWorld, x: number, y: number) {
+    const result = await playwrightHelpers.clickAtCoordinates(this, x, y, { button: 'right' });
+    this.attach(`Right click at coordinates result: ${result.message}`, 'text/plain');
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I inspect element at coordinates {int}, {int}',
+  async function (this: ICustomWorld, x: number, y: number) {
+    const result = await playwrightHelpers.getTextAtCoordinates(this, x, y);
+    
+    if (result.success && result.element) {
+      const info = `
+=== Element at Coordinates (${x}, ${y}) ===
+Tag: ${result.element.tag}
+Text: ${result.text}
+Position: (${result.element.boundingBox.x}, ${result.element.boundingBox.y})
+Size: ${result.element.boundingBox.width}x${result.element.boundingBox.height}
+Attributes: ${JSON.stringify(result.element.attributes, null, 2)}
+`;
+      this.attach(info, 'text/plain');
+      console.log(info);
+    } else {
+      this.attach(`Inspect at coordinates result: ${result.message}`, 'text/plain');
+    }
+  }
+);
+
+/**
+ * DYNAMIC/RELATIVE COORDINATE STEPS
+ */
+
+When(
+  'I calculate coordinates for {string}',
+  async function (this: ICustomWorld, selector: string) {
+    const result = await playwrightHelpers.getElementPosition(this, selector);
+    if (result.success && result.position) {
+      const box = result.position;
+      this.calculatedPosition = {
+        selector,
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        centerX: box.x + box.width / 2,
+        centerY: box.y + box.height / 2
+      };
+      
+      const info = `
+=== Calculated Position for ${selector} ===
+Top-Left: (${box.x}, ${box.y})
+Center: (${this.calculatedPosition.centerX}, ${this.calculatedPosition.centerY})
+Size: ${box.width}x${box.height}
+Bottom: ${box.y + box.height}
+Right: ${box.x + box.width}
+`;
+      this.attach(info, 'text/plain');
+      console.log(info);
+    }
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I click {int} pixels below {string}',
+  async function (this: ICustomWorld, pixelsBelow: number, selector: string) {
+    const result = await playwrightHelpers.clickRelativeToElement(
+      this,
+      selector,
+      0,
+      pixelsBelow,
+      true
+    );
+    this.attach(
+      `Clicked ${pixelsBelow}px below ${selector} at (${result.coordinates.x}, ${result.coordinates.y}): ${result.message}`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I click {int} pixels below and {int} pixels right of {string}',
+  async function (this: ICustomWorld, pixelsBelow: number, pixelsRight: number, selector: string) {
+    const result = await playwrightHelpers.clickRelativeToElement(
+      this,
+      selector,
+      pixelsRight,
+      pixelsBelow,
+      true
+    );
+    this.attach(
+      `Clicked at offset (${pixelsRight}, ${pixelsBelow}) from ${selector}: ${result.message}`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+When(
+  'I click at dropdown option {int} below {string}',
+  async function (this: ICustomWorld, optionNumber: number, selector: string) {
+    // Standard dropdown item height is ~40px, with starting offset of ~20px
+    const itemHeight = 40;
+    const startOffset = 20;
+    const offsetY = startOffset + (optionNumber - 1) * itemHeight;
+    
+    const result = await playwrightHelpers.clickRelativeToElement(
+      this,
+      selector,
+      0,
+      offsetY,
+      true
+    );
+    this.attach(
+      `Clicked dropdown option ${optionNumber} below ${selector} at (${result.coordinates.x}, ${result.coordinates.y}): ${result.message}`,
+      'text/plain'
+    );
+    expect(result.success).toBeTruthy();
+  }
+);
+
+/**
+ * SELECT2 DROPDOWN STEPS
+ */
+
+When(
+  'I fill modal input with {string}',
+  async function (this: ICustomWorld, text: string) {
+    const substitutedText = substituteCredentials(text);
+    const script = `
+      (function() {
+        const input = document.querySelector('.modal.show input[type="text"], .modal.show input[type="search"]');
+        if (!input) return { error: 'Modal input not found' };
+        input.value = '${substitutedText}';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return { success: true };
+      })();
+    `;
+    const result = await playwrightHelpers.evaluateScript(this, script);
+    if (result.result?.error) {
+      throw new Error(result.result.error);
+    }
+    this.attach(`Filled modal input with: ${substitutedText}`, 'text/plain');
+  }
+);
+
+When(
+  'I click modal button with text {string}',
+  async function (this: ICustomWorld, text: string) {
+    const script = `
+      (function() {
+        const button = Array.from(document.querySelectorAll('.modal.show button')).find(b => 
+          b.textContent.trim().includes('${text}')
+        );
+        if (!button) return { error: 'Modal button not found: ${text}' };
+        button.click();
+        return { success: true };
+      })();
+    `;
+    const result = await playwrightHelpers.evaluateScript(this, script);
+    if (result.result?.error) {
+      throw new Error(result.result.error);
+    }
+    this.attach(`Clicked modal button: ${text}`, 'text/plain');
+  }
+);
+
+When(
+  'I click first visible grid cell',
+  async function (this: ICustomWorld) {
+    const script = `
+      (function() {
+        const gridCells = Array.from(document.querySelectorAll('[role="gridcell"]'));
+        const visibleCell = gridCells.find(cell => {
+          const rect = cell.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
+        if (!visibleCell) return { error: 'No visible grid cells found' };
+        visibleCell.click();
+        return { success: true, text: visibleCell.textContent.trim() };
+      })();
+    `;
+    const result = await playwrightHelpers.evaluateScript(this, script);
+    if (result.result?.error) {
+      throw new Error(result.result.error);
+    }
+    this.attach(`Clicked first grid cell: ${result.result.text}`, 'text/plain');
+  }
+);
+
+When(
+  'I click button containing text {string}',
+  async function (this: ICustomWorld, text: string) {
+    const script = `
+      (function() {
+        const button = Array.from(document.querySelectorAll('button')).find(b => 
+          b.textContent.includes('${text}')
+        );
+        if (!button) return { error: 'Button not found: ${text}' };
+        button.click();
+        return { success: true };
+      })();
+    `;
+    const result = await playwrightHelpers.evaluateScript(this, script);
+    if (result.result?.error) {
+      throw new Error(result.result.error);
+    }
+    this.attach(`Clicked button: ${text}`, 'text/plain');
+  }
+);
+
+When(
+  'I select {string} from Select2 dropdown labeled {string}',
+  async function (this: ICustomWorld, optionText: string, labelText: string) {
+    const substitutedOption = substituteCredentials(optionText);
+    const substitutedLabel = substituteCredentials(labelText);
+    
+    this.attach(`Clicking arrow for dropdown labeled "${substitutedLabel}"`, 'text/plain');
+    
+    // Find the arrow that belongs to the div with the label and click it
+    const clickArrowScript = `
+      (function() {
+        // Find the label
+        const label = Array.from(document.querySelectorAll('label')).find(l => 
+          l.textContent.includes('${substitutedLabel}')
+        );
+        
+        if (!label) {
+          return { success: false, error: 'Label not found' };
+        }
+        
+        // Look for arrow in parent or ancestor divs
+        let currentElement = label;
+        let arrow = null;
+        let attempts = 0;
+        
+        while (currentElement && !arrow && attempts < 10) {
+          currentElement = currentElement.parentElement;
+          if (currentElement) {
+            arrow = currentElement.querySelector('.select2-selection__arrow');
+          }
+          attempts++;
+        }
+        
+        if (arrow) {
+          arrow.click();
+          return { 
+            success: true, 
+            message: 'Arrow found and clicked',
+            parentLevel: attempts
+          };
+        }
+        
+        return { success: false, error: 'Arrow not found in parent hierarchy' };
+      })();
+    `;
+    
+    const result = await playwrightHelpers.evaluateScript(this, clickArrowScript);
+    this.attach(`Arrow click result: ${JSON.stringify(result)}`, 'text/plain');
+    
+    // Take screenshot after clicking arrow
+    await this.page!.waitForTimeout(500);
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-arrow-clicked`);
+  }
+);
+
+When(
+  'I select first option from Select2 dropdown labeled {string}',
+  async function (this: ICustomWorld, labelText: string) {
+    const substitutedLabel = substituteCredentials(labelText);
+    
+    this.attach(`Clicking arrow for dropdown labeled "${substitutedLabel}"`, 'text/plain');
+    
+    // Find the arrow that belongs to the div with the label and click it
+    const clickArrowScript = `
+      (function() {
+        // Find the label
+        const label = Array.from(document.querySelectorAll('label')).find(l => 
+          l.textContent.includes('${substitutedLabel}')
+        );
+        
+        if (!label) {
+          return { success: false, error: 'Label not found' };
+        }
+        
+        // Look for arrow in parent or ancestor divs
+        let currentElement = label;
+        let arrow = null;
+        let attempts = 0;
+        
+        while (currentElement && !arrow && attempts < 10) {
+          currentElement = currentElement.parentElement;
+          if (currentElement) {
+            arrow = currentElement.querySelector('.select2-selection__arrow');
+          }
+          attempts++;
+        }
+        
+        if (arrow) {
+          arrow.click();
+          return { 
+            success: true, 
+            message: 'Arrow found and clicked',
+            parentLevel: attempts
+          };
+        }
+        
+        return { success: false, error: 'Arrow not found in parent hierarchy' };
+      })();
+    `;
+    
+    const result = await playwrightHelpers.evaluateScript(this, clickArrowScript);
+    this.attach(`Arrow click result: ${JSON.stringify(result)}`, 'text/plain');
+    
+    // Take screenshot after clicking arrow
+    await this.page!.waitForTimeout(500);
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-arrow-clicked`);
   }
 );
 

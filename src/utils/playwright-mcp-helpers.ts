@@ -948,3 +948,489 @@ export async function inspectElements(
     };
   }
 }
+
+/**
+ * Hover over an element
+ * @param world The Cucumber world context
+ * @param selector CSS selector for the element to hover
+ * @returns Hover result
+ */
+export async function hoverElement(
+  world: ICustomWorld,
+  selector: string
+): Promise<{ success: boolean; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'hover',
+      arguments: { selector }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      message: parsed.message || `Hovered on ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to hover: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Press a keyboard key
+ * @param world The Cucumber world context
+ * @param key Key to press (e.g., "Enter", "ArrowDown", "Escape")
+ * @returns Press key result
+ */
+export async function pressKey(
+  world: ICustomWorld,
+  key: string
+): Promise<{ success: boolean; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'pressKey',
+      arguments: { key }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      message: parsed.message || `Pressed key: ${key}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to press key: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Get detailed information about an element
+ * @param world The Cucumber world context
+ * @param selector CSS selector for the element
+ * @returns Detailed element information
+ */
+export async function inspectElementDetailed(
+  world: ICustomWorld,
+  selector: string
+): Promise<{ success: boolean; details: any; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'inspectDetailed',
+      arguments: { selector }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      details: parsed.details,
+      message: parsed.message || `Inspected ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      details: null,
+      message: `Failed to inspect element: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Dispatch a custom event on an element
+ * @param world The Cucumber world context
+ * @param selector CSS selector for the element
+ * @param eventType Event type to dispatch
+ * @param eventProperties Optional event properties
+ * @returns Dispatch result
+ */
+export async function dispatchCustomEvent(
+  world: ICustomWorld,
+  selector: string,
+  eventType: string,
+  eventProperties?: Record<string, any>
+): Promise<{ success: boolean; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'dispatchEvent',
+      arguments: { selector, eventType, eventProperties }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      message: parsed.message || `Dispatched ${eventType} on ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to dispatch event: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Click an element using multiple strategies with retry logic
+ * @param world The Cucumber world context
+ * @param selector CSS selector for the element
+ * @param options Additional options like maxRetries
+ * @returns Click result with strategy used
+ */
+export async function clickWithRetry(
+  world: ICustomWorld,
+  selector: string,
+  options: { maxRetries?: number; waitBetween?: number } = {}
+): Promise<{ success: boolean; message: string; strategy: string }> {
+  const maxRetries = options.maxRetries || 5;
+  const waitBetween = options.waitBetween || 500;
+
+  const strategies: Array<{
+    name: string;
+    fn: () => Promise<{ success: boolean; message: string }>;
+  }> = [
+    {
+      name: 'standard-click',
+      fn: async () => clickElement(world, selector)
+    },
+    {
+      name: 'force-click',
+      fn: async () => clickElement(world, selector, { force: true })
+    },
+    {
+      name: 'hover-then-click',
+      fn: async () => {
+        await hoverElement(world, selector);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return clickElement(world, selector);
+      }
+    },
+    {
+      name: 'js-click',
+      fn: async () => {
+        const result = await evaluateScript(
+          world,
+          `(() => {
+            const el = document.querySelector('${selector}');
+            if (el) { el.click(); return true; }
+            return false;
+          })()`
+        );
+        return {
+          success: result.result === true,
+          message: result.result === true ? 'JS click successful' : 'Element not found'
+        };
+      }
+    },
+    {
+      name: 'dispatch-mouse-events',
+      fn: async () => {
+        const script = `(() => {
+          const el = document.querySelector('${selector}');
+          if (!el) return false;
+          ['mousedown', 'mouseup', 'click'].forEach(eventType => {
+            el.dispatchEvent(new MouseEvent(eventType, { bubbles: true, cancelable: true }));
+          });
+          return true;
+        })()`;
+        const result = await evaluateScript(world, script);
+        return {
+          success: result.result === true,
+          message: result.result === true ? 'Mouse events dispatched' : 'Element not found'
+        };
+      }
+    }
+  ];
+
+  for (let i = 0; i < maxRetries; i++) {
+    for (const strategy of strategies) {
+      try {
+        const result = await strategy.fn();
+        if (result.success) {
+          return {
+            success: true,
+            message: `${result.message} (attempt ${i + 1}, strategy: ${strategy.name})`,
+            strategy: strategy.name
+          };
+        }
+      } catch (error) {
+        // Continue to next strategy
+      }
+    }
+
+    // Wait before next retry
+    if (i < maxRetries - 1) {
+      await new Promise(resolve => setTimeout(resolve, waitBetween));
+    }
+  }
+
+  return {
+    success: false,
+    message: `Failed to click ${selector} after ${maxRetries} attempts with all strategies`,
+    strategy: 'none'
+  };
+}
+
+/**
+ * Select a date range option with robust interaction strategies
+ * @param world The Cucumber world context
+ * @param rangeKey Date range key attribute (e.g., "Last 30 Days")
+ * @returns Selection result with strategy used
+ */
+export async function selectDateRangeOption(
+  world: ICustomWorld,
+  rangeKey: string
+): Promise<{ success: boolean; message: string; strategy: string }> {
+  const selector = `li[data-range-key="${rangeKey}"]`;
+
+  // First, ensure the dropdown is open and element is visible
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  // Try to click with retry strategies
+  const result = await clickWithRetry(world, selector, { maxRetries: 3, waitBetween: 300 });
+
+  // Verify that the dropdown closed (indicating successful selection)
+  await new Promise(resolve => setTimeout(resolve, 500));
+  const stillVisible = await isElementVisible(world, selector);
+
+  if (!stillVisible) {
+    return {
+      success: true,
+      message: `Successfully selected date range: ${rangeKey} using ${result.strategy}`,
+      strategy: result.strategy
+    };
+  }
+
+  return {
+    success: false,
+    message: `Clicked ${rangeKey} but dropdown did not close`,
+    strategy: result.strategy
+  };
+}
+
+/**
+ * Click at specific screen coordinates
+ * @param world The Cucumber world context
+ * @param x X coordinate in pixels
+ * @param y Y coordinate in pixels
+ * @param options Click options (button, clickCount, delay)
+ * @returns Click result
+ */
+export async function clickAtCoordinates(
+  world: ICustomWorld,
+  x: number,
+  y: number,
+  options?: { button?: 'left' | 'right' | 'middle'; clickCount?: number; delay?: number }
+): Promise<{ success: boolean; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'clickAtCoordinates',
+      arguments: { x, y, ...options }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      message: parsed.message || `Clicked at (${x}, ${y})`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to click at coordinates: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Get element and text at specific screen coordinates
+ * @param world The Cucumber world context
+ * @param x X coordinate in pixels
+ * @param y Y coordinate in pixels
+ * @returns Element information at coordinates
+ */
+export async function getTextAtCoordinates(
+  world: ICustomWorld,
+  x: number,
+  y: number
+): Promise<{ success: boolean; text: string; element: any; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await world.mcpClients.playwright.callTool({
+      name: 'getTextAtCoordinates',
+      arguments: { x, y }
+    });
+
+    const content = result.content as { type: string; text: string }[];
+    const parsed = JSON.parse(content[0].type === 'text' ? content[0].text : content[0].text);
+    return {
+      success: parsed.success,
+      text: parsed.text || '',
+      element: parsed.element || null,
+      message: parsed.message || `Got element at (${x}, ${y})`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      text: '',
+      element: null,
+      message: `Failed to get text at coordinates: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Get element's bounding box for dynamic positioning
+ * @param world The Cucumber world context
+ * @param selector CSS selector for the element
+ * @returns Bounding box with x, y, width, height
+ */
+export async function getElementPosition(
+  world: ICustomWorld,
+  selector: string
+): Promise<{ success: boolean; position: any; message: string }> {
+  if (!world.mcpClients?.playwright) {
+    throw new Error('Playwright MCP client not initialized');
+  }
+
+  try {
+    const result = await inspectElementDetailed(world, selector);
+    if (!result.success || !result.details) {
+      return {
+        success: false,
+        position: null,
+        message: `Failed to get element position: ${result.message}`
+      };
+    }
+
+    return {
+      success: true,
+      position: result.details.boundingBox,
+      message: `Got position for ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      position: null,
+      message: `Failed to get element position: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Calculate coordinates relative to an element (e.g., "3 items below")
+ * @param world The Cucumber world context
+ * @param selector Base element selector
+ * @param offsetX Horizontal offset in pixels (can be negative)
+ * @param offsetY Vertical offset in pixels (can be negative)
+ * @param useCenter If true, calculates from element center; if false, from top-left
+ * @returns Calculated coordinates
+ */
+export async function calculateRelativeCoordinates(
+  world: ICustomWorld,
+  selector: string,
+  offsetX: number = 0,
+  offsetY: number = 0,
+  useCenter: boolean = true
+): Promise<{ success: boolean; x: number; y: number; message: string }> {
+  try {
+    const posResult = await getElementPosition(world, selector);
+    if (!posResult.success || !posResult.position) {
+      return {
+        success: false,
+        x: 0,
+        y: 0,
+        message: `Failed to get base element position: ${posResult.message}`
+      };
+    }
+
+    const box = posResult.position;
+    let baseX = box.x;
+    let baseY = box.y;
+
+    if (useCenter) {
+      baseX += box.width / 2;
+      baseY += box.height / 2;
+    }
+
+    const finalX = Math.round(baseX + offsetX);
+    const finalY = Math.round(baseY + offsetY);
+
+    return {
+      success: true,
+      x: finalX,
+      y: finalY,
+      message: `Calculated coordinates: (${finalX}, ${finalY}) from ${selector}`
+    };
+  } catch (error) {
+    return {
+      success: false,
+      x: 0,
+      y: 0,
+      message: `Failed to calculate coordinates: ${(error as Error).message}`
+    };
+  }
+}
+
+/**
+ * Click at a position relative to an element
+ * @param world The Cucumber world context
+ * @param selector Base element selector
+ * @param offsetX Horizontal offset in pixels
+ * @param offsetY Vertical offset in pixels
+ * @param useCenter If true, offset from center; if false, from top-left
+ * @returns Click result
+ */
+export async function clickRelativeToElement(
+  world: ICustomWorld,
+  selector: string,
+  offsetX: number,
+  offsetY: number,
+  useCenter: boolean = true
+): Promise<{ success: boolean; message: string; coordinates: { x: number; y: number } }> {
+  const coordsResult = await calculateRelativeCoordinates(world, selector, offsetX, offsetY, useCenter);
+  
+  if (!coordsResult.success) {
+    return {
+      success: false,
+      message: coordsResult.message,
+      coordinates: { x: 0, y: 0 }
+    };
+  }
+
+  const clickResult = await clickAtCoordinates(world, coordsResult.x, coordsResult.y);
+  
+  return {
+    success: clickResult.success,
+    message: `${clickResult.message} (relative to ${selector})`,
+    coordinates: { x: coordsResult.x, y: coordsResult.y }
+  };
+}
