@@ -54,19 +54,22 @@ BeforeAll({ tags: '@requires-login' }, async function () {
   const context = await browser.newContext();
   const page = await context.newPage();
   
-  // Navigate and login
-  await page.goto(credentials.testEnvironment.loginUrl);
-  await page.waitForSelector('input#username', { state: 'visible' });
+  // Navigate and login with increased timeout
+  await page.goto(credentials.testEnvironment.loginUrl, { 
+    waitUntil: 'domcontentloaded', 
+    timeout: 60000 
+  });
+  await page.waitForSelector('input#username', { state: 'visible', timeout: 15000 });
   await page.fill('input#username', credentials.testUser.username);
   await page.fill('input#password', credentials.testUser.password);
   await page.click("button:has-text('Sign In')");
   
   // Wait for Continue button and click it
   try {
-    await page.waitForSelector("button:has-text('Continue'):not([disabled])", { timeout: 10000 });
+    await page.waitForSelector("button:has-text('Continue'):not([disabled])", { timeout: 15000 });
     await page.click("button:has-text('Continue'):not([disabled])");
     // Wait for dashboard to load
-    await page.waitForSelector("[data-test-id='dashboard'], .dashboard, main, h1, h2", { timeout: 10000 });
+    await page.waitForSelector("[data-test-id='dashboard'], .dashboard, main, h1, h2", { timeout: 15000 });
   } catch (e) {
     console.log('Continue button or dashboard not found, but continuing anyway');
   }

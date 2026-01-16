@@ -568,14 +568,14 @@ When(
     // First hover
     const hoverResult = await playwrightHelpers.hoverElement(this, selector);
     this.attach(`Hover: ${hoverResult.message}`, 'text/plain');
-    
+
     // Small delay
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     // Then click
     const clickResult = await playwrightHelpers.clickElement(this, selector);
     this.attach(`Click: ${clickResult.message}`, 'text/plain');
-    
+
     expect(hoverResult.success && clickResult.success).toBeTruthy();
   }
 );
@@ -588,7 +588,7 @@ When(
   'I debug element {string}',
   async function (this: ICustomWorld, selector: string) {
     const result = await playwrightHelpers.inspectElementDetailed(this, selector);
-    
+
     if (result.success) {
       const details = result.details;
       const debugInfo = `
@@ -648,7 +648,7 @@ When(
   'I inspect element at coordinates {int}, {int}',
   async function (this: ICustomWorld, x: number, y: number) {
     const result = await playwrightHelpers.getTextAtCoordinates(this, x, y);
-    
+
     if (result.success && result.element) {
       const info = `
 === Element at Coordinates (${x}, ${y}) ===
@@ -685,7 +685,7 @@ When(
         centerX: box.x + box.width / 2,
         centerY: box.y + box.height / 2
       };
-      
+
       const info = `
 === Calculated Position for ${selector} ===
 Top-Left: (${box.x}, ${box.y})
@@ -744,7 +744,7 @@ When(
     const itemHeight = 40;
     const startOffset = 20;
     const offsetY = startOffset + (optionNumber - 1) * itemHeight;
-    
+
     const result = await playwrightHelpers.clickRelativeToElement(
       this,
       selector,
@@ -778,8 +778,8 @@ When(
       })();
     `;
     const result = await playwrightHelpers.evaluateScript(this, script);
-    if (result.result?.error) {
-      throw new Error(result.result.error);
+    if (result.result && typeof result.result === 'object' && 'error' in result.result) {
+      throw new Error((result.result as { error: string }).error);
     }
     this.attach(`Filled modal input with: ${substitutedText}`, 'text/plain');
   }
@@ -799,8 +799,8 @@ When(
       })();
     `;
     const result = await playwrightHelpers.evaluateScript(this, script);
-    if (result.result?.error) {
-      throw new Error(result.result.error);
+    if (result.result && typeof result.result === 'object' && 'error' in result.result) {
+      throw new Error((result.result as { error: string }).error);
     }
     this.attach(`Clicked modal button: ${text}`, 'text/plain');
   }
@@ -822,10 +822,10 @@ When(
       })();
     `;
     const result = await playwrightHelpers.evaluateScript(this, script);
-    if (result.result?.error) {
-      throw new Error(result.result.error);
+    if (result.result && typeof result.result === 'object' && 'error' in result.result) {
+      throw new Error((result.result as { error: string }).error);
     }
-    this.attach(`Clicked first grid cell: ${result.result.text}`, 'text/plain');
+    this.attach(`Clicked first grid cell: ${(result.result as { text: string }).text}`, 'text/plain');
   }
 );
 
@@ -843,8 +843,8 @@ When(
       })();
     `;
     const result = await playwrightHelpers.evaluateScript(this, script);
-    if (result.result?.error) {
-      throw new Error(result.result.error);
+    if (result.result && typeof result.result === 'object' && 'error' in result.result) {
+      throw new Error((result.result as { error: string }).error);
     }
     this.attach(`Clicked button: ${text}`, 'text/plain');
   }
@@ -853,11 +853,11 @@ When(
 When(
   'I select {string} from Select2 dropdown labeled {string}',
   async function (this: ICustomWorld, optionText: string, labelText: string) {
-    const substitutedOption = substituteCredentials(optionText);
     const substitutedLabel = substituteCredentials(labelText);
-    
-    this.attach(`Clicking arrow for dropdown labeled "${substitutedLabel}"`, 'text/plain');
-    
+    const substitutedOption = substituteCredentials(optionText);
+
+    this.attach(`Selecting "${substitutedOption}" from dropdown "${substitutedLabel}"`, 'text/plain');
+
     // Find the arrow that belongs to the div with the label and click it
     const clickArrowScript = `
       (function() {
@@ -895,67 +895,440 @@ When(
         return { success: false, error: 'Arrow not found in parent hierarchy' };
       })();
     `;
-    
+
     const result = await playwrightHelpers.evaluateScript(this, clickArrowScript);
     this.attach(`Arrow click result: ${JSON.stringify(result)}`, 'text/plain');
-    
-    // Take screenshot after clicking arrow
+
+    // Wait for dropdown to open
+    await this.page!.waitForTimeout(2000);
+
+    // Debug: Check all Select2 elements on the page
+    const debugScript = `
+      (function() {
+        const allSelect2Dropdowns = document.querySelectorAll('.select2-dropdown, .select2-results, .select2-container--open');
+        const allOptions = document.querySelectorAll('.select2-results__option, li[role="option"], li[role="treeitem"]');
+        
+        return {
+          dropdownCount: allSelect2Dropdowns.length,
+          dropdowns: Array.from(allSelect2Dropdowns).map(d => ({
+            classes: d.className,
+            visible: d.offsetParent !== null,
+            innerHTML: d.innerHTML?.substring(0, 200)
+          })),
+          optionCount: allOptions.length,
+          options: Array.from(allOptions).map(o => ({
+            text: o.textContent?.trim(),
+            role: o.getAttribute('role'),
+            classes: o.className,
+            visible: o.offsetParent !== null
+          }))
+        };
+      })();
+    `;
+
+    const debugResult = await playwrightHelpers.evaluateScript(this, debugScript);
+    this.attach(`Debug - All Select2 elements: ${JSON.stringify(debugResult)}`, 'text/plain');
+
+    // Check if there's a search input and type into it
+    try {
+      const searchInput = await this.page!.waitForSelector('.select2-search__field, input.select2-search__field', { timeout: 2000, state: 'visible' });
+      if (searchInput) {
+        await searchInput.type(substitutedOption);
+        this.attach(`Typed "${substitutedOption}" into search field`, 'text/plain');
+        await this.page!.waitForTimeout(2000); // Wait for results to filter
+      }
+    } catch {
+      this.attach('No search field found, continuing with option selection', 'text/plain');
+    }
+
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-dropdown-opened`);
+
+    // Now select the option
+    this.attach(`Looking for option: "${substitutedOption}"`, 'text/plain');
+
+    // Wait longer for options to appear and try evaluation script
+    await this.page!.waitForTimeout(2000);
+
+    const selectOptionScript = `
+      (function() {
+        // Search in all possible Select2 result containers
+        const allOptions = document.querySelectorAll('.select2-results__option, li[role="option"], li[role="treeitem"]');
+        const options = Array.from(allOptions);
+        
+        // Filter for valid, visible options
+        const validOptions = options.filter(opt => {
+          const isVisible = opt.offsetParent !== null;
+          const hasRole = opt.getAttribute('role') === 'option' || opt.getAttribute('role') === 'treeitem';
+          const notDisabled = !opt.hasAttribute('aria-disabled') || opt.getAttribute('aria-disabled') === 'false';
+          const notMessage = !opt.classList.contains('select2-results__message');
+          const notLoading = !opt.classList.contains('loading-results');
+          const hasText = opt.textContent?.trim() && opt.textContent?.trim() !== 'No results found';
+          
+          return isVisible && hasRole && notDisabled && notMessage && notLoading && hasText;
+        });
+        
+        // Try exact match first
+        let option = validOptions.find(opt => 
+          opt.textContent?.trim() === '${substitutedOption}'
+        );
+        
+        // If no exact match, try partial match
+        if (!option) {
+          option = validOptions.find(opt => 
+            opt.textContent?.trim().includes('${substitutedOption}')
+          );
+        }
+        
+        // If still no match, try first available option
+        if (!option && validOptions.length > 0) {
+          option = validOptions[0];
+        }
+        
+        if (option) {
+          option.click();
+          return { 
+            success: true, 
+            message: 'Option selected',
+            text: option.textContent?.trim()
+          };
+        }
+        
+        return { 
+          success: false, 
+          error: 'No valid options found',
+          totalOptions: allOptions.length,
+          visibleOptions: validOptions.length,
+          availableOptions: validOptions.map(o => ({
+            text: o.textContent?.trim(),
+            role: o.getAttribute('role'),
+            classes: o.className,
+            visible: o.offsetParent !== null
+          }))
+        };
+      })();
+    `;
+
+    const selectResult = await playwrightHelpers.evaluateScript(this, selectOptionScript);
+    this.attach(`Selection result: ${JSON.stringify(selectResult)}`, 'text/plain');
+
+    if (selectResult && !selectResult.success) {
+      throw new Error(`Failed to select option: ${JSON.stringify(selectResult)}`);
+    }
+
+    // Wait for dropdown to close
     await this.page!.waitForTimeout(500);
-    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-arrow-clicked`);
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-option-selected`);
   }
 );
 
+/**
+ * SELECT REGULAR DROPDOWN BY LABEL AND VALUE
+ */
 When(
-  'I select first option from Select2 dropdown labeled {string}',
-  async function (this: ICustomWorld, labelText: string) {
+  'I select {string} from dropdown labeled {string}',
+  async function (this: ICustomWorld, optionValue: string, labelText: string) {
     const substitutedLabel = substituteCredentials(labelText);
-    
-    this.attach(`Clicking arrow for dropdown labeled "${substitutedLabel}"`, 'text/plain');
-    
-    // Find the arrow that belongs to the div with the label and click it
-    const clickArrowScript = `
+    const substitutedValue = substituteCredentials(optionValue);
+
+    this.attach(`Selecting "${substitutedValue}" from dropdown "${substitutedLabel}"`, 'text/plain');
+
+    // Find the label and its associated select element
+    const selectScript = `
       (function() {
-        // Find the label
-        const label = Array.from(document.querySelectorAll('label')).find(l => 
-          l.textContent.includes('${substitutedLabel}')
+        // Find all labels matching the text
+        const allLabels = Array.from(document.querySelectorAll('label'));
+        const matchingLabels = allLabels.filter(l => 
+          l.textContent && l.textContent.includes('${substitutedLabel}')
         );
         
-        if (!label) {
-          return { success: false, error: 'Label not found' };
+        if (matchingLabels.length === 0) {
+          return { success: false, error: 'Label not found'  };
         }
         
-        // Look for arrow in parent or ancestor divs
-        let currentElement = label;
-        let arrow = null;
-        let attempts = 0;
-        
-        while (currentElement && !arrow && attempts < 10) {
-          currentElement = currentElement.parentElement;
-          if (currentElement) {
-            arrow = currentElement.querySelector('.select2-selection__arrow');
+        // Try each matching label (prefer the most visible one)
+        for (const label of matchingLabels) {
+          // Check if this label is visible
+          const rect = label.getBoundingClientRect();
+          const isVisible = rect.width > 0 && rect.height > 0;
+          
+          if (!isVisible) continue;
+          
+          // Look for select element
+          let selectElement = null;
+          
+          // Try 1: Check for 'for' attribute
+          const forAttr = label.getAttribute('for');
+          if (forAttr) {
+            selectElement = document.getElementById(forAttr);
           }
-          attempts++;
+          
+          // Try 2: Look in parent container
+          if (!selectElement) {
+            let currentElement = label.parentElement;
+            let attempts = 0;
+            while (currentElement && !selectElement && attempts < 10) {
+              selectElement = currentElement.querySelector('select');
+              currentElement = currentElement.parentElement;
+              attempts++;
+            }
+          }
+          
+          if (selectElement && selectElement.tagName === 'SELECT') {
+            // Find option by value or text
+            const options = Array.from(selectElement.options);
+            let targetOption = options.find(opt => 
+              opt.value.toUpperCase().includes('${substitutedValue.toUpperCase()}') ||
+              opt.textContent?.toUpperCase().includes('${substitutedValue.toUpperCase()}')
+            );
+            
+            if (targetOption) {
+              selectElement.value = targetOption.value;
+              
+              // Trigger change event
+              const changeEvent = new Event('change', { bubbles: true });
+              selectElement.dispatchEvent(changeEvent);
+              
+              return {
+                success: true,
+                message: 'Option selected',
+                value: targetOption.value,
+                text: targetOption.textContent?.trim()
+              };
+            } else {
+              return {
+                success: false,
+                error: 'Option not found in select',
+                availableOptions: options.map(o => ({ value: o.value, text: o.textContent?.trim() }))
+              };
+            }
+          }
         }
         
-        if (arrow) {
-          arrow.click();
-          return { 
-            success: true, 
-            message: 'Arrow found and clicked',
-            parentLevel: attempts
+        return { success: false, error: 'Select element not found for label' };
+      })();
+    `;
+
+    const result = await playwrightHelpers.evaluateScript(this, selectScript);
+    this.attach(`Selection result: ${JSON.stringify(result)}`, 'text/plain');
+
+    if (!result.success || !(result.result && typeof result.result === 'object' && 'success' in result.result && (result.result as { success: boolean }).success)) {
+      throw new Error(`Failed to select option: ${JSON.stringify(result)}`);
+    }
+
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-selected`);
+  }
+);
+
+/**
+ * SELECT2 DROPDOWN SELECTION WITH INTEGER INDEX
+ */
+When(
+  'I select option {int} from Select2 dropdown labeled {string}',
+  async function (this: ICustomWorld, optionIndex: number, labelText: string) {
+    const substitutedLabel = substituteCredentials(labelText);
+
+    this.attach(`Selecting option ${optionIndex} from dropdown "${substitutedLabel}"`, 'text/plain');
+
+    // Take screenshot before attempting to click
+    await playwrightHelpers.takeScreenshot(this, `before-${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}`);
+
+    // Don't wait too long - Select2 elements work best when accessed quickly after form load
+    await this.page!.waitForTimeout(500);
+
+    // Use JavaScript to find and click the Select2 element - use mousedown event
+    // IMPORTANT: Search within visible form/container to avoid selecting from background page
+    const clickSelect2Script = `
+      (function() {
+        // Find all labels matching the text
+        const allLabels = Array.from(document.querySelectorAll('label'));
+        const matchingLabels = allLabels.filter(l => 
+          l.textContent && l.textContent.includes('${substitutedLabel}')
+        );
+        
+        if (matchingLabels.length === 0) {
+          return { success: false, error: 'Label not found anywhere on page'  };
+        }
+        
+        // Try each matching label (prefer the most visible/topmost one)
+        for (const label of matchingLabels) {
+          // Check if this label is in a visible container (not on background page)
+          const rect = label.getBoundingClientRect();
+          const isVisible = rect.width > 0 && rect.height > 0 && 
+                           window.getComputedStyle(label).visibility !== 'hidden' &&
+                           window.getComputedStyle(label).display !== 'none';
+          
+          if (!isVisible) continue;
+          
+          // Look for .select2-selection in the same row/container
+          let currentElement = label;
+          let selection = null;
+          let attempts = 0;
+          
+          while (currentElement && !selection && attempts < 10) {
+            currentElement = currentElement.parentElement;
+            if (currentElement) {
+              selection = currentElement.querySelector('.select2-selection');
+            }
+            attempts++;
+          }
+          
+          if (selection) {
+            // Check if the select2 element is also visible and has higher z-index
+            const selectionRect = selection.getBoundingClientRect();
+            const selectionVisible = selectionRect.width > 0 && selectionRect.height > 0;
+            
+            if (selectionVisible) {
+              // Use mousedown event which Select2 listens to
+              const event = new MouseEvent('mousedown', {
+                bubbles: true,
+                cancelable: true,
+                view: window
+              });
+              selection.dispatchEvent(event);
+              return { 
+                success: true, 
+                message: 'Selection found and clicked with mouse event',
+                parentLevel: attempts,
+                labelIndex: matchingLabels.indexOf(label),
+                totalLabels: matchingLabels.length
+              };
+            }
+          }
+        }
+        
+        return { 
+          success: false, 
+          error: 'No visible Select2 selection found for label',
+          labelsFound: matchingLabels.length
+        };
+      })();
+    `;
+
+    const result = await playwrightHelpers.evaluateScript(this, clickSelect2Script);
+    this.attach(`Click result: ${JSON.stringify(result)}`, 'text/plain');
+
+    if (!result.success || !(result.result && typeof result.result === 'object' && 'success' in result.result && (result.result as { success: boolean }).success)) {
+      throw new Error(`Failed to click dropdown: ${JSON.stringify(result)}`);
+    }
+
+    // Wait a moment for options to load via AJAX
+    await this.page!.waitForTimeout(800);
+
+    // Immediately try to select option
+    this.attach(`Selecting option ${optionIndex}`, 'text/plain');
+
+    // Get all valid options and click the one at the specified index
+    // IMPORTANT: Only search in the topmost (highest z-index) Select2 dropdown container
+    const selectOptionScript = `
+      (function() {
+        // Find all Select2 result containers and get the one with highest z-index (topmost)
+        const containers = Array.from(document.querySelectorAll('.select2-results, .select2-dropdown'));
+        
+        // Get the container with highest z-index
+        let topContainer = null;
+        let maxZIndex = -1;
+        
+        containers.forEach(container => {
+          if (container.offsetParent !== null) { // Only consider visible containers
+            const zIndex = parseInt(window.getComputedStyle(container).zIndex) || 0;
+            if (zIndex > maxZIndex) {
+              maxZIndex = zIndex;
+              topContainer = container;
+            }
+          }
+        });
+        
+        // If no container found with z-index, use the last visible one (Select2 appends to body)
+        if (!topContainer && containers.length > 0) {
+          topContainer = containers.find(c => c.offsetParent !== null) || containers[containers.length - 1];
+        }
+        
+        if (!topContainer) {
+          return {
+            success: false,
+            error: 'No visible Select2 dropdown container found',
+            totalContainers: containers.length
           };
         }
         
-        return { success: false, error: 'Arrow not found in parent hierarchy' };
+        // Search for options only within the topmost container
+        const allOptions = topContainer.querySelectorAll('.select2-results__option, li[role="option"], li[role="treeitem"]');
+        const options = Array.from(allOptions);
+        
+        // Filter for valid, visible options
+        const validOptions = options.filter(opt => {
+          const isVisible = opt.offsetParent !== null;
+          const hasRole = opt.getAttribute('role') === 'option' || opt.getAttribute('role') === 'treeitem';
+          const notDisabled = !opt.hasAttribute('aria-disabled') || opt.getAttribute('aria-disabled') === 'false';
+          const notMessage = !opt.classList.contains('select2-results__message');
+          const notLoading = !opt.classList.contains('loading-results');
+          const text = opt.textContent?.trim();
+          const hasText = text && text !== 'No results found' && text !== 'Loading results…';
+          const notPlaceholder = text !== 'Select...' && text !== 'Please select...' && text !== '-- Select --';
+          
+          return isVisible && hasRole && notDisabled && notMessage && notLoading && hasText && notPlaceholder;
+        });
+        
+        const targetIndex = ${optionIndex - 1}; // Convert to 0-based index
+        
+        if (validOptions.length > targetIndex && targetIndex >= 0) {
+          const selectedOption = validOptions[targetIndex];
+          const text = selectedOption.textContent?.trim();
+          
+          // Use proper mouse events for Select2 compatibility
+          const mousedownEvent = new MouseEvent('mousedown', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          const mouseupEvent = new MouseEvent('mouseup', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          
+          selectedOption.dispatchEvent(mousedownEvent);
+          selectedOption.dispatchEvent(mouseupEvent);
+          selectedOption.dispatchEvent(clickEvent);
+          
+          return { 
+            success: true, 
+            message: 'Option selected at index ' + ${optionIndex},
+            text: text,
+            totalOptions: validOptions.length
+          };
+        }
+        
+        return { 
+          success: false, 
+          error: 'Option index out of range or no valid options found',
+          requestedIndex: ${optionIndex},
+          totalValidOptions: validOptions.length,
+          totalElements: options.length,
+          allOptions: validOptions.slice(0, 10).map(o => ({
+            text: o.textContent?.trim(),
+            role: o.getAttribute('role'),
+            classes: o.className,
+            disabled: o.hasAttribute('aria-disabled'),
+            visible: o.offsetParent !== null
+          }))
+        };
       })();
     `;
-    
-    const result = await playwrightHelpers.evaluateScript(this, clickArrowScript);
-    this.attach(`Arrow click result: ${JSON.stringify(result)}`, 'text/plain');
-    
-    // Take screenshot after clicking arrow
-    await this.page!.waitForTimeout(500);
-    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-arrow-clicked`);
+
+    const selectOptionResult = await playwrightHelpers.evaluateScript(this, selectOptionScript);
+    this.attach(`Selection result: ${JSON.stringify(selectOptionResult)}`, 'text/plain');
+
+    if (selectOptionResult?.result && typeof selectOptionResult.result === 'object' && 'success' in selectOptionResult.result && !(selectOptionResult.result as { success: boolean }).success) {
+      throw new Error(`Failed to select option ${optionIndex}: ${JSON.stringify(selectOptionResult)}`);
+    }
+
+    await playwrightHelpers.takeScreenshot(this, `${substitutedLabel.replace(/\s+/g, '-').toLowerCase()}-selected`);
   }
 );
 

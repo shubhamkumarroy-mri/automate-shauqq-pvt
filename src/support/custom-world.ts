@@ -36,6 +36,16 @@ export interface ICustomWorld extends World {
   lastPageState?: any;
   lastScriptResult?: any;
   pageExploration?: any;
+
+  calculatedPosition?: {
+    selector: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    centerX: number;
+    centerY: number;
+  };
 }
 
 export class CustomWorld extends World implements ICustomWorld {

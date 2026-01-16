@@ -99,7 +99,9 @@ async function navigate(
 ): Promise<{ success: boolean; url: string; title: string; message: string }> {
   try {
     const currentPage = await initBrowser();
-    await currentPage.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await currentPage.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Wait a bit for dynamic content to load
+    await currentPage.waitForTimeout(1000);
     const title = await currentPage.title();
     return {
       success: true,

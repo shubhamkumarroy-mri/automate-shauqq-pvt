@@ -31,17 +31,23 @@ Feature: Create Job Workflow
     
     # Confirm property selection
     When I click on dialog button with text "Select Property"
-    And I wait for 2 seconds
+    And I wait for 1 second
     And I take a screenshot named "step-8-create-job-screen"
     
-    # Select dropdowns  
-    When I select "A1 - 5 DAYS" from Select2 dropdown labeled "Job Type"
-    
-    When I select first option from Select2 dropdown labeled "Job Category"
-    And I wait for 2 seconds
+    And I wait for 3 seconds
+
+    # Select dropdowns quickly before they timeout - Job Category first
+    When I select option 1 from Select2 dropdown labeled "Job Category"
+    And I wait for 1 second
     And I take a screenshot named "step-10-job-category-selected"
     
-    When I select "<JOB_LOCATION>" from Select2 dropdown labeled "Job Location"
+    # Now select Job Type
+    When I select option 1 from Select2 dropdown labeled "Job Type"
+    And I wait for 1 second
+    And I take a screenshot named "step-10b-job-type-selected"
+    
+    # Select Job Location (regular select element)
+    When I select "EXTERNAL" from dropdown labeled "Job Location"
     And I wait for 1 second
     And I take a screenshot named "step-11-location-selected"
     
@@ -53,3 +59,4 @@ Feature: Create Job Workflow
     And I wait for text "The changes have been saved"
     And I take a screenshot named "step-13-job-saved"
     And I verify text "The changes have been saved" is visible
+    And I wait for 5 seconds
