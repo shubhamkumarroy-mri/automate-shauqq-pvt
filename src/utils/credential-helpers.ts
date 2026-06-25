@@ -6,6 +6,7 @@ import { credentials } from '../support/credentials.js';
  * - <BASE_URL> -> baseUrl
  * - <LOGIN_URL> -> loginUrl
  * - <SEARCH_JOBS_URL> -> searchJobsUrl
+ * - <PURCHASE_ORDER_CONTROL_SCREEN_URL> -> purchaseOrderControlScreenUrl
  * - <USERNAME> -> username
  * - <PASSWORD> -> password
  * - <PROPERTY_CODE> -> propertyCode
@@ -21,6 +22,10 @@ export function substituteCredentials(text: string): string {
   result = result.replace(/<BASE_URL>/g, credentials.testEnvironment.baseUrl);
   result = result.replace(/<LOGIN_URL>/g, credentials.testEnvironment.loginUrl);
   result = result.replace(/<SEARCH_JOBS_URL>/g, credentials.testEnvironment.searchJobsUrl);
+  result = result.replace(
+    /<PURCHASE_ORDER_CONTROL_SCREEN_URL>/g,
+    credentials.testEnvironment.purchaseOrderControlScreenUrl
+  );
 
   // User credentials
   result = result.replace(/<USERNAME>/g, credentials.testUser.username);

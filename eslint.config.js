@@ -39,7 +39,7 @@ export default tseslint.config(
     },
     rules: {
       ...customizedESLint.rules,
-      // Disable overly strict rules for MCP server integration
+      // Keep test code practical while avoiding overly strict type rules
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',

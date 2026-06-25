@@ -2,38 +2,58 @@
   "cookies": [
     {
       "name": "ARRAffinity",
-      "value": "8d9fe0a026c3f70f741fccedafb9b70e7722609ef7551a503ffa1337f273def2",
-      "domain": ".internal-dev.accuserv.cloud",
+      "value": "c8bd78242d635b7284ed99dec711258cc33f56696248c4fc5e7e3c7cd4352918",
+      "domain": ".accuserv-cloud-dev-voids.azurewebsites.net",
       "path": "/",
       "expires": -1,
       "httpOnly": true,
-      "secure": false,
+      "secure": true,
       "sameSite": "Lax"
     },
     {
-      "name": "Host-ACCUSERVWEBDEV",
-      "value": "CfDJ8IVkY9Mvq7NDjU_CUSAfcIRz39C40w37sZYe_fOlva7lKujwizNBbbqnt8OTxmEnky8QG2kLueQjNsb47x5lqpGgqt2Gcmo46aAjWJ3OruEwqjWaL2L0EkFKYR7zVnR1gG1J5QBuLxzAPgXvanYNhNS049iHwM1k4h68tUVYo6TdVuS_ztNj1UmclN78jCl3FS1cFKvU6IMN_Aj_UZZxCQjR21QuJdO7QSb8ClZbAdKymnZ5sfdKHdV1XVc0bFEaZ1bTjYMUbYaXBBg04vsJiu8I1s4X_0v_1bYm97qRCsqVGA6ePpfNXtl-RAvcY4NpIMy9gAixbCPCb6Da6vil4fDxAS16wxm78uA0a9Bkh3akakycVp8xUGSEh8Faa1hGq7gDvJzP4S5zCm4GsPT98R8",
-      "domain": "internal-dev.accuserv.cloud",
+      "name": "ARRAffinitySameSite",
+      "value": "c8bd78242d635b7284ed99dec711258cc33f56696248c4fc5e7e3c7cd4352918",
+      "domain": ".accuserv-cloud-dev-voids.azurewebsites.net",
       "path": "/",
       "expires": -1,
       "httpOnly": true,
-      "secure": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__cf_bm",
+      "value": "xGxZks1xQdFAcBKoK1rn9NWRBFYkqu_mB7rCA98GFyE-1782366637.9477584-1.0.1.1-h7xSqhB8fUy7uWRrd3hz0pbRs77Gtc5mu.f3Inx78euJ31mcnB1VN6ssajPZAHct3GeUHMeyIAcZLMChdSjgH8yV4pgJYO_jDV50sdEChbO8_z1vWMcqocTZablYJi9w",
+      "domain": ".devtest.mrisoftware.com",
+      "path": "/",
+      "expires": 1782368437.097128,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "Host-ACCUSERVWEBDEV",
+      "value": "CfDJ8A2nWqHhUlJFrC0sciCMyS8c5k9XTjnRppNH-r6A_YXPTdYs3k2rUJjHWtTMzqvE6v_hcG1LRpx8M47TmkJkFRqgu19EbXOP7jHh2pdHukZbQr1jijZmJTVLi8eHTNX4Lu95q5QKgqII9T9deDhS7ooojSfB21uXTrNfCSRQY5p4lvc1Wu8Fn6GRi7-LtLFgpIKeJ3EOw1JaXk3VcwIfSaC9B31g6Rv5x9q91Mou3s2Ranyz7l7SD5fB90Fpyyd80fdfpM4g2BBWS1AC1yH8DKD8zNBURoTQW1nIf4yG0KBxU-dUx3_PoaQt929xmUTwzgd4kwkI9O9ASpfZ21CxgOcDVeqGHUGEzUBjzLcR-2_E7Y4S7GAmXwCGZAhZ8yRyGJlRNW4thakVd7SW7rKCA6Y",
+      "domain": "accuserv-cloud-dev-voids.azurewebsites.net",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "Host-X-XSRF-ACCUSERVWEBDEV",
-      "value": "CfDJ8IVkY9Mvq7NDjU_CUSAfcISVWGFKtOWF5JAWBpG6z4c536j72pnZbBaBGf5mSSpDPbqd-O7zojICuaPTdpJUwPayF_pffoxQIAh5s2mKMoHMsXhXr7gkle60oqecCZeGjntOged5OCy9t48t5rZFVJ8",
-      "domain": "internal-dev.accuserv.cloud",
+      "value": "CfDJ8A2nWqHhUlJFrC0sciCMyS9WxnyDII5rGWlkackDSJ7ROOpC0HLNI1Av8NOXnCEOI2MxB9kIQ50ePr9KwTsuf4EeezZnnf7iENveoL8LpbzvrmpUXKBAXSsPIPfRWMP5H6CwTJXvouQIHjrX5Ws_MGc",
+      "domain": "accuserv-cloud-dev-voids.azurewebsites.net",
       "path": "/",
       "expires": -1,
       "httpOnly": true,
-      "secure": false,
+      "secure": true,
       "sameSite": "Strict"
     },
     {
       "name": "XSRF-REQUEST-TOKEN",
-      "value": "CfDJ8IVkY9Mvq7NDjU_CUSAfcIRu6TzJNt_ELzR0lzPMcuJBQE0sd2gnsY1srYKr25ASPbrsZaOHpnapDm6x-13H5lzyTfne8LuchbRs-7hhtVGK0xIaSRRbJ7vqcyhH_RJIrZ4vhDw9aECRRt31bw3tWGSX8gRHRnvSthAgrM_KW1hTnMc8yv-OD1NUySmcF7gRgg",
-      "domain": "internal-dev.accuserv.cloud",
+      "value": "CfDJ8A2nWqHhUlJFrC0sciCMyS_y5khesyK_FkvxW7XCQGW3BhVgLrSc9GrwI8DiVjCcR-t-yrFeEH1o8DigPkklxqGhXcO5G8soj5rBd02sU6569KwLGmDOaAuOTaugjydG2ZnjQ5fll1cBLKh3PqDheP20u2HPc9VwZstLcOBFQ9m_m8vkQOSQZ5t--6lLlbu4DA",
+      "domain": "accuserv-cloud-dev-voids.azurewebsites.net",
       "path": "/",
       "expires": -1,
       "httpOnly": false,
@@ -43,7 +63,7 @@
   ],
   "origins": [
     {
-      "origin": "https://internal-dev.accuserv.cloud",
+      "origin": "https://accuserv-cloud-dev-voids.azurewebsites.net",
       "localStorage": [
         {
           "name": "gcc",

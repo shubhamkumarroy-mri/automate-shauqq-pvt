@@ -5,6 +5,7 @@ interface TestEnvironment {
   baseUrl: string;
   loginUrl: string;
   searchJobsUrl: string;
+  purchaseOrderControlScreenUrl: string;
 }
 
 interface TestUser {

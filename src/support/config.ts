@@ -1,6 +1,6 @@
 import { LaunchOptions } from '@playwright/test';
 const browserOptions: LaunchOptions = {
-  headless: process.env.HEADED ? false : true,
+  headless: process.env.PLAYWRIGHT_HEADLESS !== 'false',
   slowMo: 0,
   args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   firefoxUserPrefs: {

@@ -1,8 +1,6 @@
 import { setWorldConstructor, World, IWorldOptions } from '@cucumber/cucumber';
 import * as messages from '@cucumber/messages';
 import { BrowserContext, Page, PlaywrightTestOptions, APIRequestContext } from '@playwright/test';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-// import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
 export interface CucumberWorldConstructorParams {
   parameters: Record<string, string>;
@@ -22,20 +20,7 @@ export interface ICustomWorld extends World {
   username?: string;
   playwrightOptions?: PlaywrightTestOptions;
 
-  // MCP Clients
-  mcpClients?: {
-    github?: Client;
-    specification?: Client;
-    testExecution?: Client;
-    playwright?: Client;
-  };
-
-  // Playwright MCP state tracking
-  lastQueryResult?: any;
-  lastInspectResult?: any;
-  lastPageState?: any;
-  lastScriptResult?: any;
-  pageExploration?: any;
+  screenshotRunDir?: string;
 
   calculatedPosition?: {
     selector: string;
@@ -54,7 +39,6 @@ export class CustomWorld extends World implements ICustomWorld {
   }
 
   debug = false;
-  mcpClients = {};
 }
 
 setWorldConstructor(CustomWorld);
